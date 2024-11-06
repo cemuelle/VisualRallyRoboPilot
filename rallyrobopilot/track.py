@@ -1,18 +1,39 @@
 from ursina import *
 import json
 from direct.stdpy import thread
+from pathlib import Path
+import json
+
+
+def load_track_metadata(track_name):
+    """
+    Loads metadata for a given track.
+
+    Args:
+        track_name (str): The name of the track (which corresponds to the subfolder name in assets).
+
+    Returns:
+        dict: The metadata for the track.
+    """
+    # Construct the full package path for the track's metadata
+    root_dir = Path(__file__).resolve().parent.parent
+    asset_path = root_dir / f"assets/{track_name}/track_metadata.json"
+    with open(asset_path, "r") as f:
+        metadata = json.load(f)
+
+    return metadata
 
 
 class Track(Entity):
-    def __init__(self, metadata_file):
+    def __init__(self, track_name):
 
-        with open(metadata_file, 'r') as f:
-            self.data = json.load(f)
+        self.track_name = track_name
+        self.data = load_track_metadata(track_name)
 
-
-        track_model = self.data["track_model"]
-        track_texture = self.data["track_texture"]
-
+        # Find assets paths.
+        track_model_path =  str(self.data["track_model"])
+        track_texture_path = str(self.data["track_texture"])
+        
         origin_position = tuple(self.data["origin_position"])
         origin_rotation = tuple(self.data["origin_rotation"])
         self.origin_scale = tuple(self.data["origin_scale"])
@@ -23,10 +44,12 @@ class Track(Entity):
         finish_line_position = tuple(self.data["finish_line_position"])
         finish_line_rotation = tuple(self.data["finish_line_rotation"])
         finish_line_scale = tuple(self.data["finish_line_scale"])
-        
-        super().__init__(model = track_model, texture = track_texture,
+       
+        print("Creating track entity")
+        super().__init__(model = track_model_path, texture = load_texture(track_texture_path),
                          position = origin_position, rotation = origin_rotation, 
                          scale = self.origin_scale, collider = "mesh")
+        print("Done creating track entity")
 
         self.finish_line = Entity(model = "cube", position = finish_line_position,
                                   rotation = finish_line_rotation, scale = finish_line_scale, visible = False)
@@ -34,7 +57,7 @@ class Track(Entity):
 
         self.details = []
         for detail in self.data["details"]:
-            self.details.append(Entity(model = detail["model"], texture = detail["texture"],
+            self.details.append(Entity(model = detail["model"], texture = load_texture(detail["texture"]),
                             position = origin_position, rotation_y = origin_rotation[1], 
                             scale = self.origin_scale[1]))
         self.obstacles = []
@@ -73,20 +96,36 @@ class Track(Entity):
 
     def load_assets(self, global_models = [], global_texs = []):
         def inner_load_assets():
-            models_to_load = list(set(global_models +
+            models_to_load = list(set(
                                       [detail["model"] for detail in self.data["details"]] +
                                       [obs["model"] for obs in self.data["obstacles"]]))
 
-            textures_to_load = list(set(global_texs +
+            textures_to_load = list(set(
                                         [detail["texture"] for detail in self.data["details"]] +
-                                        [obs["texture"] for obs in self.data["obstacles"]] +
-                                        [elem for elem in self.data["textures"]] if "textures" in self.data else []))
+                                        [obs["texture"] for obs in self.data["obstacles"]]
+                                        ))
 
-            for i, m in enumerate(models_to_load):
+            # Load global models and textures.
+            for i, m in enumerate(global_models):
+                print("Loading global model")
+                print(m)
                 load_model(m)
+            for i, t in enumerate(global_texs):
+                print("Loading global texture")
+                print(t)
+                load_texture(t)
+                
+            for i, m in enumerate(models_to_load):
+                print("Loading local model")
+                print(m)
+                model_path = str(m)
+                load_model(model_path)
 
             for i, t in enumerate(textures_to_load):
-                load_texture(t)
+                print("Loading local texture")
+                print(t)
+                texture_path = str(t)
+                load_texture(texture_path)
 
         try:
             thread.start_new_thread(function=inner_load_assets, args="")

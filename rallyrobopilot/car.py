@@ -13,8 +13,8 @@ Text.default_resolution = 1080 * Text.size
 class Car(Entity):
     def __init__(self, position = (0, 0, 4), rotation = (0, 0, 0), topspeed = 30, acceleration = 0.35, braking_strength = 30, friction = 1.5, camera_speed = 8):
         super().__init__(
-            model = "sports-car.obj",
-            texture = "sports-red.png",
+            model = "assets/cars/sports-car.obj",
+            texture = "assets/cars/garage/sports-car/sports-red.png",
             collider = "sphere",
             position = position,
             rotation = rotation,
@@ -142,8 +142,8 @@ class Car(Entity):
 
     def sports_car(self):
         self.car_type = "sports"
-        self.model = "sports-car.obj"
-        self.texture = "sports-red.png"
+        self.model = "assets/cars/sports-car.obj"
+        self.texture = "assets/cars/garage/sports-car/sports-red.png"
         self.topspeed = 50
         self.minspeed = -15
         self.acceleration = 25
@@ -469,8 +469,8 @@ class CarRepresentation(Entity):
     def __init__(self, car, position = (0, 0, 0), rotation = (0, 65, 0)):
         super().__init__(
             parent = scene,
-            model = "sports-car.obj",
-            texture = "sports-red.png",
+            model = "assets/cars/sports-car.obj",
+            texture = "assets/cars/garage/sports-car/sports-red.png",
             position = position,
             rotation = rotation,
             scale = (1, 1, 1)

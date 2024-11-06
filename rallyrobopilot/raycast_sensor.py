@@ -9,7 +9,7 @@ class SingleRaySensor(Entity):
         super().__init__(
             parent = car,
             model = "line",
-            texture = "red.png",
+            texture = "assets/utils/red.png",
             position = (0,0,0)
         )
         self.car = car
