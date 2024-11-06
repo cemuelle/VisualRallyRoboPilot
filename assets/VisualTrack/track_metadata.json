@@ -1,6 +1,6 @@
 {
     "track_model": "assets/VisualTrack/cuby.obj",
-    "track_texture": "assets/VisualTrack/IntersectiongeneralTex.png",
+    "track_texture": "assets/VisualTrack/IntersectionGeneralTex.png",
 
     "origin_position": [ 0, 1   , 0],
     "origin_rotation": [  0, 0, 0 ],
@@ -17,29 +17,29 @@
     [
         {
             "model": "assets/VisualTrack/IntersectionRoad.obj",
-            "texture": "assets/VisualTrack/IntersectiongeneralTex.png"
+            "texture": "assets/VisualTrack/IntersectionGeneralTex.png"
         },
 
         {
             "model": "assets/VisualTrack/IntersectionPath1.obj",
-            "texture": "assets/VisualTrack/Indicators_cyan.png"
+            "texture": "assets/Indicators/Indicators_cyan.png"
         },
 
         {
             "model": "assets/VisualTrack/IntersectionPath2.obj",
-            "texture": "assets/VisualTrack/Indicators_red.png"
+            "texture": "assets/Indicators/Indicators_red.png"
         },
 
         {
             "model": "assets/VisualTrack/IntersectionPath3.obj",
-            "texture": "assets/VisualTrack/Indicators_blue.png"
+            "texture": "assets/Indicators/Indicators_blue.png"
         }
     ], 
     "obstacles":
     [
         {
             "model": "assets/VisualTrack/IntersectionObstacles.obj",
-            "texture": "assets/VisualTrack/IntersectiongeneralTex. png"
+            "texture": "assets/VisualTrack/IntersectionGeneralTex. png"
         }
     ],
     "trajectories" : "assets/VisualTrack/intersection.traj"
