@@ -16,6 +16,8 @@ setup(
     long_description_content_type="text/markdown",
     url="",  # Replace with your repo URL if available
     packages=find_packages(),  # Automatically find and include packages
+    include_package_data=True,  # Include package data specified in MANIFEST.in
+    package_data={"": ["assets/*"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",  # Adjust license as needed
