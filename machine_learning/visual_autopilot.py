@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from PyQt6 import QtWidgets
 from machine_learning.models import AlexNetPerso
+from preprocessing import preprocess
 
 from data_collector import DataCollectionUI
 """
@@ -26,25 +27,18 @@ model.eval()
 
 output_feature_labels = ['forward', 'backward', 'left', 'right', 'nothing']
 
-def preprocess_input(s):
-    # return torch.tensor([s.raycast_distances[3],
-    # s.raycast_distances[4],
-    # s.raycast_distances[5],
-    # s.raycast_distances[6],
-    # s.raycast_distances[7],
-    # s.raycast_distances[8],
-    # s.raycast_distances[9],
-    # s.raycast_distances[10],
-    # s.raycast_distances[11]], dtype=torch.float32)
-    return
-
 
 class VisualNNMsgProcessor:
     def __init__(self):
         self.model = model
 
     def nn_infer(self, message):
-        input_tensor = preprocess_input(message)
+
+        image = message['image']
+        image = preprocess(image)
+
+        image = image.unsqueeze(0)  # Add batch dimension if necessary
+        
         input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension if necessary
 
         with torch.no_grad():

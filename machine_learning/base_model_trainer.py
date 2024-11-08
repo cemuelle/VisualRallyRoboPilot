@@ -3,6 +3,10 @@ import torch.nn as nn
 from datetime import datetime
 # from torch.utils.tensorboard import SummaryWriter
 from models import AlexNetPerso
+import torchvision.transforms as transforms
+from preprocessing import preprocess
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 
 def trainer(model, training_dataloader, validation_dataloader, num_epochs, lr):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -91,7 +95,13 @@ def load_data():
 
 if __name__ == "__main__":
     model = AlexNetPerso()
+    # Assuming your images are in a directory structure suitable for ImageFolder
+    dataset = ImageFolder(root='path_to_your_dataset', transform=preprocess)
+    
     training_data, training_labels, validation_data, validation_labels = load_data()
+
+
+
     training_dataset = data.TensorDataset(training_data, training_labels)
     validation_dataset = data.TensorDataset(validation_data, validation_labels)
     training_dataloader = data.DataLoader(training_dataset, batch_size=32, shuffle=True)
