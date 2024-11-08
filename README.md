@@ -5,19 +5,14 @@
 This repository holds a sandbox driving simulation controllable via a network interface as a machine learning and data collection challenge.  
 
 # Installation
-
+From the root of the repository, run
 ```
-pip install -r requirements.txt
-```
-
-The following requirement is optional and only needed to run the examplar data_collector.py
-```
-imageio==2.35.1
+pip install -e .
 ```
 
-To run the game
+To run the game, you can use
 ```
-python main.py
+python scripts/main.py
 ```
 
 # Generality
