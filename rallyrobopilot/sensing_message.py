@@ -88,8 +88,10 @@ class SensingSnapshotManager:
 
 import socket
 import imageio
+import redis
 class NetworkDataCmdInterface:
     def __init__(self, callback, address = "127.0.0.1", port = 7654):
+        self.r = redis.Redis(host='localhost', port=6379, db=0)
         self.data = []
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
