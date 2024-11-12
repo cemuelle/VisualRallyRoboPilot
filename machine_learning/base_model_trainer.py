@@ -4,9 +4,8 @@ import torch.nn as nn
 from datetime import datetime
 # from torch.utils.tensorboard import SummaryWriter
 from models import AlexNetPerso
-import torchvision.transforms as transforms
 from preprocessing import preprocess
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, TensorDataset, random_split
 
 def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -27,15 +26,15 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         with torch.no_grad():
             for i, data in enumerate(validation_dataloader):
-                vinputs, vlabels = data
-                vinputs, vlabels = vinputs.to(device), vlabels.to(device)
+                inputs_image, inputs_color, labels = data
+                vinputs_image, vinputs_color, vlabels = inputs_image.to(device), inputs_color.to(device), labels.to(device)
 
-                voutputs = model(vinputs)
+                voutputs = model(vinputs_image, vinputs_color)
                 vloss = criterion(voutputs, vlabels)
 
-                running_loss += vloss
+                running_loss += vloss.item()
         
-        avg_vloss = running_loss / len(i+1)
+        avg_vloss = running_loss / (i+1)
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
 
@@ -48,6 +47,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
         if avg_vloss < best_loss:
             best_loss = avg_vloss
             model_path = 'model_{}_{}'.format(timestamp, epoch)
+            print(f"Saving model to {model_path}")
             torch.save(model.state_dict(), model_path)
         
 
@@ -56,21 +56,21 @@ def train_one_epoch(epoch_index, training_dataloader, tb_writer=None):
     last_loss = 0.0
 
     for i, data in enumerate(training_dataloader, 0):
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        inputs_image, inputs_color, labels = data
+        vinputs_image, vinputs_color, vlabels = inputs_image.to(device), inputs_color.to(device), labels.to(device)
 
         optimizer.zero_grad()
 
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        outputs = model(vinputs_image, vinputs_color)
+        loss = criterion(outputs, vlabels)
         loss.backward()
 
         optimizer.step()
 
         running_loss += loss.item()
         
-        if i % 1000 == 999:
-            last_loss = running_loss / 1000
+        if i % 100 == 99:
+            last_loss = running_loss / 100
             running_loss = 0.0
             print(f" Batch {i + 1}, Loss: {last_loss}")
             if tb_writer is not None:
@@ -85,13 +85,11 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
 
     print("Loading model...")
-    model = AlexNetPerso(4, 0)
+    model = AlexNetPerso(4)
     model.to(device)
 
     print("Loading data...")
-    X, y = load_data("./data")
-
-    dataset = Dataset(X, y)
+    dataset = CustomDataset("./data", transform=preprocess)
     training_size = int(0.8 * len(dataset))
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])

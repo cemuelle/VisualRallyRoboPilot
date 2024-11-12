@@ -61,7 +61,6 @@ class RemoteController(Entity):
 
     def update(self):
         self.update_network()
-        self.process_remote_commands()
         self.process_sensing()
 
     def process_sensing(self):
@@ -69,6 +68,7 @@ class RemoteController(Entity):
             return
 
         if time.time() - self.last_sensing >= self.sensing_period:
+            self.process_remote_commands()
             snapshot = SensingSnapshot()
             snapshot.current_controls = (held_keys['w'] or held_keys["up arrow"],
                                          held_keys['s'] or held_keys["down arrow"],
@@ -167,8 +167,7 @@ class RemoteController(Entity):
                     elif commands[1] == b'rotation':
                         self.car.reset_orientation = (0, commands[2], 0)
                     elif commands[1] == b'speed':
-                        # Todo
-                        pass
+                        self.car.reset_speed = commands[2]
                     elif commands[1] == b'ray':
                         self.car.multiray_sensor.set_enabled_rays(commands[2] == b'visible')
 

@@ -3,8 +3,10 @@ import torch.nn as nn
 from torchvision import models
 
 class AlexNetPerso(nn.Module):
-    def __init__(self, num_classes=4, num_route=4):
+    def __init__(self, num_classes=4):
         super(AlexNetPerso, self).__init__()
+
+        route_rgb=3
 
         self.alexnet = models.alexnet(pretrained=True)
 
@@ -12,22 +14,22 @@ class AlexNetPerso(nn.Module):
         self.alexnet.classifier[6] = nn.Linear(self.alexnet.classifier[6].in_features, num_classes)
 
         self.route_color = nn.Sequential(
-            nn.Linear(num_route, 64),
+            nn.Linear(route_rgb, 64),
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU()
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(num_classes + num_route, 64),
+            nn.Linear(num_classes + 64, 64),
             nn.ReLU(),
             nn.Linear(64, num_classes)
         )
 
-    def forward(self, x, route):
+    def forward(self, x, route_color):
         image_features = self.alexnet(x)
 
-        route_features = self.route_color(route)
+        route_features = self.route_color(route_color)
 
         features = torch.cat((image_features, route_features), dim=1)
 

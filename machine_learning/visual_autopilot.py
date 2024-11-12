@@ -21,7 +21,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 model_path = "../rallyBot/models/augmented_nn.pth"
 model_dict = torch.load(model_path)
 
-model = AlexNetPerso(4, 0)
+model = AlexNetPerso(4)
 model.load_state_dict(model_dict)
 model.eval()
 
