@@ -67,4 +67,4 @@ def load_data_single_folder(folder_path):
     return inputs, targets
 
 
-load_data_single_folder("./data/blue")
+#load_data_single_folder("./data/blue")
