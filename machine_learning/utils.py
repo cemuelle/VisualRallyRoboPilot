@@ -2,7 +2,7 @@ import os
 import pickle
 import lzma
 import numpy as np
-from preprocessing import preprocess
+from machine_learning.preprocessing import preprocess
 from PIL import Image
 from torch.utils.data import Dataset
 import torch

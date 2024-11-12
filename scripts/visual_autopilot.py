@@ -1,12 +1,18 @@
+
+
 import sys
 import torch
 import torch.nn as nn
 from PyQt6 import QtWidgets
 from machine_learning.models import AlexNetPerso
-from preprocessing import preprocess
+from machine_learning.preprocessing import preprocess
 
 from data_collector import DataCollectionUI
-"""
+
+from machine_learning.utils import colToRgb
+from rallyrobopilot import *
+from PIL import Image
+r"""
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
 
@@ -18,8 +24,8 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 
-model_path = "../rallyBot/models/augmented_nn.pth"
-model_dict = torch.load(model_path)
+model_path = "model_20241112_132920_7.pth"
+model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)
 model.load_state_dict(model_dict)
@@ -33,16 +39,17 @@ class VisualNNMsgProcessor:
         self.model = model
 
     def nn_infer(self, message):
+        car_speed = message.car_speed
+        print(f"Car speed: {car_speed}")
 
-        image = message['image']
+        image = message.image
+        image = Image.fromarray(image)
+        color = colToRgb("cyan")
+
         image = preprocess(image)
 
-        image = image.unsqueeze(0)  # Add batch dimension if necessary
-        
-        input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension if necessary
-
         with torch.no_grad():
-            output = self.model(input_tensor)
+            output = self.model(image, color)
         print("Models output: ", output)
 
         output_list = output.tolist()[0]

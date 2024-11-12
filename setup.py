@@ -15,7 +15,7 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     url="",  # Replace with your repo URL if available
-    packages=find_packages(),  # Automatically find and include packages
+    packages=find_packages(include=['rallyrobopilot', 'machine_learning']),  # Automatically find and include packages
     include_package_data=True,  # Include package data specified in MANIFEST.in
     package_data={"": ["assets/*"]},
     classifiers=[
