@@ -1,12 +1,12 @@
 import torch
+from utils import *
 import torch.nn as nn
 from datetime import datetime
 # from torch.utils.tensorboard import SummaryWriter
 from models import AlexNetPerso
 import torchvision.transforms as transforms
 from preprocessing import preprocess
-from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset, random_split
 
 def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -79,16 +79,25 @@ def train_one_epoch(epoch_index, training_dataloader, tb_writer=None):
             
     return last_loss
 
-def load_data():
-    # Load the training and validation datasets
-    # Replace with your own data loading code
-    pass
-
 if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    print("Loading model...")
     model = AlexNetPerso(4, 0)
     model.to(device)
+
+    print("Loading data...")
+    X, y = load_data("./data")
+
+    dataset = Dataset(X, y)
+    training_size = int(0.8 * len(dataset))
+    validation_size = len(dataset) - training_size
+    training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
+
+    training_dataloader = DataLoader(training_dataset, batch_size=32, shuffle=True)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters())
 
