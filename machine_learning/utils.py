@@ -20,11 +20,11 @@ def load_data(folder_path):
                         data = pickle.load(f)
                         number_of_samples += 2 * len(data)
                         # Process the original data
-                        inputs.extend([[x.image, subfolder_name] for x in data])
+                        inputs.extend([[x.image, colToRgb(subfolder_name)] for x in data])
                         targets.extend([list(x.current_controls) for x in data])
 
                         # Add symmetric data
-                        inputs.extend([[np.fliplr(x.image), subfolder_name] for x in data])
+                        inputs.extend([[np.fliplr(x.image), colToRgb(subfolder_name)] for x in data])
                         targets.extend([[x.current_controls[0], x.current_controls[1], x.current_controls[3], x.current_controls[2]] for x in data])
 
                 except Exception as e:
@@ -57,6 +57,18 @@ def load_data_single_folder(folder_path):
             print(f"Error loading data from {file_path} due to {e}")
     print(f"Number of samples: {number_of_samples}")
     return inputs, targets
+
+
+def colToRgb(colorName):
+    match colorName:
+        case "red":
+            return [255,0,0]
+        case "cyan":
+            return [0,255,255]
+        case "blue":
+            return [0,0,255]
+        case default:
+            return [0,0,0]
 
 
 #load_data("./data/")
