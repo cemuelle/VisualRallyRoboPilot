@@ -26,8 +26,7 @@ RUN apt-get update -y \
 # Rally part.
 WORKDIR /app
 RUN apt-get update && apt-get install -y git && apt-get clean
-# RUN git clone https://gitlab.hevs.ch/louis.lettry/rallyrobopilot.git .
-# RUN git checkout cedric
+RUN git clone https://github.com/ISC-HEI/RallyRoboPilot.git .
 COPY . .
 
 RUN set -xe \
@@ -39,7 +38,7 @@ RUN set -xe \
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -e .
 RUN pip install python3_xlib
 
-CMD ["python", "main.py"]
+CMD ["python", "scripts/main.py"]
