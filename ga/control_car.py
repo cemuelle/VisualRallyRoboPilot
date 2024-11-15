@@ -1,6 +1,7 @@
 import requests
 import time
 import numpy as np
+import math
 
 class CarController:
     def __init__(self, protocol, server_ip, port, gate_p1=None, gate_p2=None, gate_thickness=5):
@@ -93,25 +94,38 @@ class CarController:
         distance_from_line = abs(np.dot(vector_p1_to_point, normal))
 
         # Check if the distance is within the given thickness
-        if distance_from_line <= self.gate_thickness:
-            return True
-        else:
-            return False
+        return distance_from_line <= self.gate_thickness
+       
+def simulate_car_movement(car_position, gate_position, list_controls, car_controller):
+    car_controller.set_gate(gate_position[0], gate_position[1], gate_position[2])
+
+    car_controller.set_car(car_position[0], car_position[1], car_position[2], car_position[3], car_position[4])
+
+    start_time = time.time()
+    crossed_gate = False
+
+    for controls in list_controls:
+        car_controller.control_car(controls)
+        sensing_data = car_controller.get_sensing()
+        if sensing_data:
+            x = sensing_data["car_position x"]
+            z = sensing_data["car_position z"]
+            position = (x, z)
+            if car_controller.is_point_in_gate(position):
+                end_time = time.time()
+                crossed_gate = True
+                break
+        time.sleep(0.5)
+
+    if not crossed_gate:
+        return math.inf
+    else:
+        elapsed_time = end_time - start_time
+        return elapsed_time
 
 if __name__ == "__main__":
-    server_ip = "127.0.0.1"
-    port = 5000
-    protocol = "http"  # "http" or "https"
-
-    # Initialize CarController and set gate details
-    car_controller = CarController(protocol, server_ip, port)
-    car_controller.set_gate([-140, -21], [-165, -24], 5)
-
-    # Set car position, speed, and rotation
-    car_controller.set_car(10, 0, 1, 50, -90)
-
-    # Giving a list of controls to control_car
-    #   Forward - Backward - Left - Right
+    car_position = [10, 0, 1, 50, -90]  # [x, y, z, speed, rotation]
+    gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
     list_controls = [
         [1, 0, 0, 0],
         [1, 0, 0, 0],  
@@ -129,28 +143,9 @@ if __name__ == "__main__":
         [0, 0, 0, 0], 
         [0, 0, 0, 0], 
     ]
+    car_controller = CarController("http", "127.0.0.1", 5000)
+    result = simulate_car_movement(car_position, gate_position, list_controls, car_controller)
+    print("Result:", result)
 
-    for controls in list_controls:
-        car_controller.control_car(controls)
-        sensing_data = car_controller.get_sensing()
-        if sensing_data:
-            x = sensing_data["car_position x"]
-            z = sensing_data["car_position z"]
-            position = (x, z)
-            if car_controller.is_point_in_gate(position):
-                print("Car is in the gate!")
-        time.sleep(0.5)
 
-    # while (True):
-    #     # Get sensing data
-    #     sensing_data = car_controller.get_sensing()
-    #     if sensing_data:
-    #         x = sensing_data["car_position x"]
-    #         z = sensing_data["car_position z"]
-    #         orientation = sensing_data["car_angle"]
-    #         position = (x, z)
-    #         print("Position:", position, "Orientation:", orientation)
-    #         if car_controller.is_point_in_gate(position):
-    #             print("Car is in the gate!")
 
-    #     time.sleep(3)
