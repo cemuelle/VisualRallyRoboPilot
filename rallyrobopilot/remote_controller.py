@@ -51,7 +51,7 @@ class RemoteController(Entity):
 
             try:
                 self.client_commands.add(command_data['command'].encode())
-                return jsonify({"status": "Command received"}), 200
+                return jsonify({"status": f"Command received: {command_data['command']}"}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
     
@@ -167,7 +167,7 @@ class RemoteController(Entity):
                     elif commands[1] == b'rotation':
                         self.car.reset_orientation = (0, commands[2], 0)
                     elif commands[1] == b'speed':
-                        # Todo
+                        self.car.reset_speed = float(commands[2])
                         pass
                     elif commands[1] == b'ray':
                         self.car.multiray_sensor.set_enabled_rays(commands[2] == b'visible')
