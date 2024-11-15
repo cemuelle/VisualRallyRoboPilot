@@ -23,8 +23,8 @@ Be warned that this could also cause crash on the client side if socket sending 
 /!\ Do not work directly in this file (make a copy and rename it) to prevent future pull from erasing what you write here.
 """
 
-
-model_path = "model_20241112_132920_7.pth"
+print("Loading model...")
+model_path = "./model_20241115_093913_8.pth"
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)
@@ -39,9 +39,6 @@ class VisualNNMsgProcessor:
         self.model = model
 
     def nn_infer(self, message):
-        car_speed = message.car_speed
-        print(f"Car speed: {car_speed}")
-
         image = message.image
         image = Image.fromarray(image)
         color = colToRgb("cyan")
@@ -49,7 +46,9 @@ class VisualNNMsgProcessor:
         image = preprocess(image)
 
         with torch.no_grad():
-            output = self.model(image, color)
+            image = image.unsqueeze(0)
+            color = torch.tensor(color).float().unsqueeze(0)
+            output = model(image, color)
         print("Models output: ", output)
 
         output_list = output.tolist()[0]

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights
 
 class AlexNetPerso(nn.Module):
     def __init__(self, num_classes=4):
@@ -9,7 +8,7 @@ class AlexNetPerso(nn.Module):
 
         route_rgb=3
 
-        self.alexnet = models.alexnet(weights=AlexNet_Weights)
+        self.alexnet = models.alexnet(pretrained=True)
 
         # Replace the last fully-connected layer
         self.alexnet.classifier[6] = nn.Linear(self.alexnet.classifier[6].in_features, num_classes)
