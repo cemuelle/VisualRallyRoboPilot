@@ -34,10 +34,6 @@ class RemoteController(Entity):
 
         self.client_commands = RemoteCommandParser()
 
-        self.reset_location = (0,0,0)
-        self.reset_speed = (0,0,0)
-        self.reset_rotation = 0
-
         self.list_controls = []
         self.start_simulate_controls = False
         self.pass_gate = False
@@ -71,8 +67,41 @@ class RemoteController(Entity):
                 return jsonify({"error": "No car connected"}), 400
 
             command_data = request.json
-            # if not command_data or 'command' not in command_data:
-            #     return jsonify({"error": "Invalid command data"}), 400
+            
+            # Validate the presence and format of each required parameter
+            required_fields = {
+                "gate_p1": list,
+                "gate_p2": list,
+                "thickness": (int, float),
+                "car_position": list,
+                "car_speed": (int, float),
+                "car_angle": (int, float),
+                "list_controls": list
+            }
+
+            # Check if all required fields are present and have the correct type
+            for field, expected_type in required_fields.items():
+                if field not in command_data:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+                if not isinstance(command_data[field], expected_type):
+                    return jsonify({"error": f"Invalid type for field: {field}. Expected {expected_type}"}), 400
+                
+            # Additional checks for specific fields
+            if len(command_data['gate_p1']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p1']):
+                return jsonify({"error": "Invalid format for gate_p1. Expected a list of two numbers."}), 400
+
+            if len(command_data['gate_p2']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p2']):
+                return jsonify({"error": "Invalid format for gate_p2. Expected a list of two numbers."}), 400
+
+            if len(command_data['car_position']) != 3 or not all(isinstance(x, (int, float)) for x in command_data['car_position']):
+                return jsonify({"error": "Invalid format for car_position. Expected a list of three numbers."}), 400
+
+            if not isinstance(command_data['list_controls'], list) or len(command_data['list_controls']) == 0 or not all(
+                    isinstance(control, list) and len(control) == 4 and all(isinstance(x, (int, float)) for x in control)
+                    for control in command_data['list_controls']
+            ):
+                return jsonify({"error": "Invalid format for list_controls. Expected a non-empty list of lists, each containing four numbers."}), 400
+        
 
             try:
                 self.start_simulate_controls = True
@@ -92,9 +121,9 @@ class RemoteController(Entity):
                     time.sleep(0.1)
 
                 if self.pass_gate:
-                    return jsonify({"status": f"Gate passed in {self.last_control -self.start_time}"}), 200
+                    return jsonify({"status": True, "time": self.last_control - self.start_time}), 200
                 else:
-                    return jsonify({"status": "Gate not passed"}), 200
+                    return jsonify({"status": False, "time": float('inf')}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
     
