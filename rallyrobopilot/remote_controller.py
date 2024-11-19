@@ -3,6 +3,9 @@ from ursina import *
 import socket
 import select
 import numpy as np
+import json
+from ga.gate import Gate
+import time
 
 from flask import Flask, request, jsonify
 
@@ -35,6 +38,13 @@ class RemoteController(Entity):
         self.reset_speed = (0,0,0)
         self.reset_rotation = 0
 
+        self.list_controls = []
+        self.start_simulate_controls = False
+        self.pass_gate = False
+        self.start_time = 0
+        self.last_control = 0
+        self.gate = Gate()
+
         #   Period for recording --> 0.1 secods = 10 times a second
         self.sensing_period = PERIOD_REMOTE_SENSING
         self.last_sensing = -1
@@ -54,15 +64,77 @@ class RemoteController(Entity):
                 return jsonify({"status": f"Command received: {command_data['command']}"}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
+            
+        @flask_app.route('/simulate', methods=['POST'])
+        def simulate_route():
+            if self.car is None:
+                return jsonify({"error": "No car connected"}), 400
+
+            command_data = request.json
+            # if not command_data or 'command' not in command_data:
+            #     return jsonify({"error": "Invalid command data"}), 400
+
+            try:
+                self.start_simulate_controls = True
+                self.pass_gate = False
+
+                self.gate.set_gate(command_data['gate_p1'], command_data['gate_p2'], command_data['thickness'])
+                # define car position, speed and rotation and then reset the car
+                self.car.reset_position = command_data['car_position']
+                self.car.reset_speed = command_data['car_speed']
+                self.car.reset_orientation = (0, command_data['car_angle'], 0)
+                self.car.reset_car()
+
+                self.list_controls = command_data['list_controls']
+                self.start_time = time.time()
+
+                while self.start_simulate_controls:
+                    time.sleep(0.1)
+
+                if self.pass_gate:
+                    return jsonify({"status": f"Gate passed in {self.last_control -self.start_time}"}), 200
+                else:
+                    return jsonify({"status": "Gate not passed"}), 200
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
     
         @flask_app.route('/sensing')
         def get_sensing_route():
             return jsonify(self.get_sensing_data()), 200
 
     def update(self):
-        self.update_network()
-        self.process_remote_commands()
+        if not self.start_simulate_controls:
+            self.update_network()
+            self.process_remote_commands()
+        else :
+            self.process_simulate_controls()
         self.process_sensing()
+
+    def process_simulate_controls(self):
+        if self.car is None:
+            return
+        
+        if time.time() - self.last_control >= self.sensing_period:
+            car_position = self.car.world_position
+            if self.gate.is_car_through((car_position[0], car_position[2])):
+                self.last_control = time.time()
+                self.pass_gate = True
+                self.start_simulate_controls = False
+                return
+
+            len_controls = len(self.list_controls)
+            if len_controls > 0:
+                controls = self.list_controls.pop(0)
+
+                held_keys['w'] = controls[0] == 1
+                held_keys['s'] = controls[1] == 1
+                held_keys['d'] = controls[2] == 1
+                held_keys['a'] = controls[3] == 1
+
+                self.last_control = time.time()
+            else:
+                self.start_simulate_controls = False
+
 
     def process_sensing(self):
         if self.car is None or self.connected_client is None:
@@ -168,7 +240,6 @@ class RemoteController(Entity):
                         self.car.reset_orientation = (0, commands[2], 0)
                     elif commands[1] == b'speed':
                         self.car.reset_speed = float(commands[2])
-                        pass
                     elif commands[1] == b'ray':
                         self.car.multiray_sensor.set_enabled_rays(commands[2] == b'visible')
 
