@@ -20,13 +20,14 @@ class CarController:
         self.gate_thickness = gate_thickness
 
     def set_car(self, x, y, z, speed, rotation):
-        print("je commence chef")
         self.send_command(f"set position {x},{y},{z};")
-        print("la position a reussi chef")
+        time.sleep(2)
         self.send_command(f"set speed {speed};")
-        print("la vitesse a reussi chef")
+        time.sleep(2)
         self.send_command(f"set rotation {rotation};")
+        time.sleep(2)
         self.send_command("reset;")
+        time.sleep(2)
 
     def send_command(self, command):
         url = f"{self.protocol}://{self.server_ip}:{self.port}/command"
