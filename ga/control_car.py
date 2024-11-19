@@ -22,8 +22,8 @@ class CarController:
     def set_car(self, x, y, z, speed, rotation):
         self.send_command(f"set position {x},{y},{z};")
         time.sleep(2)
-        #self.send_command(f"set speed {speed};")
-        #time.sleep(2)
+        self.send_command(f"set speed {speed};")
+        time.sleep(2)
         self.send_command(f"set rotation {rotation};")
         time.sleep(2)
         self.send_command("reset;")
