@@ -146,7 +146,7 @@ if __name__ == "__main__":
         [0, 0, 0, 0], 
         [0, 0, 0, 0], 
     ]
-    time.sleep(20)
+    time.sleep(5)
     car_controller = CarController("http", "127.0.0.1", 5000)
     result = simulate_car_movement(car_position, gate_position, list_controls, car_controller)
     print("Result:", result)
