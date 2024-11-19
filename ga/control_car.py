@@ -20,8 +20,11 @@ class CarController:
         self.gate_thickness = gate_thickness
 
     def set_car(self, x, y, z, speed, rotation):
+        print("je commence chef")
         self.send_command(f"set position {x},{y},{z};")
+        print("la position a reussi chef")
         self.send_command(f"set speed {speed};")
+        print("la vitesse a reussi chef")
         self.send_command(f"set rotation {rotation};")
         self.send_command("reset;")
 
