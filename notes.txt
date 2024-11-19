@@ -1,0 +1,11 @@
+records blue:
+	mean absolute error, linear 	= 4.513599385452993
+	mean absolute error, quadratic 	= 4.15282773883398
+
+records cyan:
+	mean absolute error, linear 	= 2.9226280357398142
+	mean absolute error, quadratic 	= 1.8208769293944096
+
+records red:
+	mean absolute error, linear 	= 1.694546102043949
+	mean absolute error, quadratic 	= 1.1947678903725079
