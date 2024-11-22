@@ -66,7 +66,6 @@ class Car(Entity):
         self.particle_pivot.position = (0, -1, -2)
 
         # Load the particles when initializing the car to avoid a lag the first time the forward input is pressed
-        self.particle_time = 0
         self.particles = Particles(self, self.particle_pivot.world_position - (0, 1, 0))
         self.particles.destroy(1)
 
