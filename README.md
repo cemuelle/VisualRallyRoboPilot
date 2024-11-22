@@ -7,6 +7,7 @@ This repository holds a sandbox driving simulation controllable via a network in
 # Installation
 From the root of the repository, run
 ```
+pip install -r requirements.txt
 pip install -e .
 ```
 
