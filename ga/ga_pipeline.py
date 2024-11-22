@@ -40,10 +40,10 @@ def add_fitness(individual_controls):
     scored_population = []
     for individual_id, controls in individual_controls:
         # Assume some initial parameters for the gate and car
-        gate_p1 = [-140, -21]
-        gate_p2 = [-165, -24]
+        gate_p1 = [301, -14]
+        gate_p2 = [291, -129]
         thickness = 5
-        car_position = [10, 0, 1]  # x, y, z
+        car_position = [295, 1, -179]  # x, y, z
         car_speed = 50
         car_angle = -90
 
@@ -71,14 +71,14 @@ def elitism(pop, elitism_count):
 
     elites = []
         # Select top elite_count individuals from the sorted population (from individual_with_scores)
-    for i in range(min(elitism_count, len(pop))):
-        data = pop[i]  # Accessing the dictionary with individual data
-        
-        controls = data['controls']  # Extract controls
+    sorted_pop = sorted(pop, key=lambda x: x[2], reverse=True)
+
+    for i in range(min(elitism_count, len(sorted_pop))):
+        individual_id, controls, fitness = sorted_pop[i]
         
         # Create the same structure as the child individuals (name, controls)
         elites.append(controls)
-
+    print(elites)
     return elites
 
 def crossover(parent1, parent2):
@@ -114,9 +114,11 @@ def add_crossover_pop(pop, population_size, elite_count):
         # Ensure parent1 and parent2 are not the same individual
         while parent1_data == parent2_data:
             parent2_data = random.choice(pop)
-        
+        # Unpack the controls from the parents
+        parent1_name, parent1_controls, parent1_fitness = parent1_data  # Unpack name and controls
+        parent2_name, parent2_controls, parent2_fitness = parent2_data
         # Perform crossover between the parents
-        child_controls = crossover(parent1_data['controls'], parent2_data['controls'])
+        child_controls = crossover(parent1_controls, parent2_controls)
         
         # Create the child with a random fitness score (this could be calculated differently)
         #child_fitness_score = random.random()
@@ -173,38 +175,39 @@ def mutate_population(population, mutation_rate):
     
     return mutated_population
 
-def genetic_algorithm(generation=2, mutation_rate=0.1, population_size=6, elitism_count=1):
+def genetic_algorithm(generation, mutation_rate, population_size, elitism_count):
 
     
     individual_controls = load_data("data_trajectory_test/*.npz")
 
-    individual_with_scores = add_fitness(individual_controls)
+    
 
     
 
     # Start the evolution process for the specified number of generations
     for gen in range(generation):
         print(f"\nGeneration {gen + 1}:")
-
+        individual_with_scores = add_fitness(individual_controls)
+        print(f"Fitness done {gen + 1}")
         # Step 1: Select Elite individuals
         elite = elitism(individual_with_scores, elitism_count)
-
+        print(f"Elitism done {gen + 1}")
         # Step 2: Create the next generation using crossover
         crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
-
+        print(f"crossover done {gen + 1}")
         # Step 3: Mutate the crossed population
         mutated_pop = mutate_population(crossed_pop, mutation_rate)
-
+        print(f"mutated_pop {gen + 1}")
         # Step 4: Add the elite individuals to the mutated population
         next_generation = elite + mutated_pop  # Elite individuals directly pass to the next generation
-
+        print(f"create final generation {gen + 1}")
         # Step 5: Print the current population after mutation
         print("Mutated Population:")
         for individual in next_generation:
             print(f"Individual: {individual[0]}, Controls: {individual[1]}")
 
-        
+        print(f"ready for gen {gen + 2}")
 
     return next_generation
 
-final_pop = genetic_algorithm(generation=2, mutation_rate=0.1, population_size=6, elitism_count=1)
+final_pop = genetic_algorithm(generation=5, mutation_rate=0.1, population_size=5, elitism_count=1)
