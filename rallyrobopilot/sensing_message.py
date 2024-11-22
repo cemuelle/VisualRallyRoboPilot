@@ -94,7 +94,7 @@ class NetworkDataCmdInterface:
         self.data = []
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.IPPROTO_TCP, socket.SO_RCVBUF, 125536)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 125536)
         self.socket.connect((address, port))
         # self.socket.setblocking(False)
         self.socket.settimeout(0.05)

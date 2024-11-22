@@ -3,6 +3,7 @@
 from PyQt6 import QtWidgets
 
 from data_collector import DataCollectionUI
+from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
 """
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -41,7 +42,8 @@ if  __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     nn_brain = ExampleNNMsgProcessor()
-    data_window = DataCollectionUI(nn_brain.process_message)
-    data_window.show()
+    # data_window = DataCollectionUI(nn_brain.process_message)
+    data_window = DataCollectionEvaluatePilot(nn_brain.process_message)
+    # data_window.show()
 
     app.exec()
