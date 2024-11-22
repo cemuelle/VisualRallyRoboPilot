@@ -2,6 +2,7 @@ import requests
 import time
 from gate import Gate
 import math
+import json
 
 class CarController:
     def __init__(self, protocol, server_ip, port):
@@ -85,7 +86,7 @@ def simulate_car_movement(car_position, gate_position, list_controls, car_contro
         elapsed_time = end_time - start_time
         return elapsed_time
     
-if __name__ == "__main__":
+def old_main():
     car_position = [10, 0, 1, 50, -90]  # [x, y, z, speed, rotation]
     gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
     list_controls = [
@@ -110,4 +111,78 @@ if __name__ == "__main__":
     print("Result:", result)
 
 
+def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, timeout=30):
+    """
+    Send a simulation request to the server.
 
+    Args:
+        protocol (str): The protocol to use (e.g., "http" or "https").
+        server_ip (str): The IP address of the server.
+        port (int): The port number of the server.
+        gate_p1 (list of float): The first gate position as a list of two floats [x, y].
+        gate_p2 (list of float): The second gate position as a list of two floats [x, y].
+        thickness (float): The thickness of the gate.
+        car_position (list of float): The car position as a list of three floats [x, y, z].
+        car_speed (float): The speed of the car.
+        car_angle (float): The angle of the car.
+        list_controls (list of list of float): The list of control commands, each command is a list of four floats.
+        timeout (int, optional): The timeout for the POST request in seconds. Defaults to 30.
+
+    Returns:
+        tuple: A tuple containing:
+            - status (bool): The status of the simulation (True if successful, False otherwise).
+            - time (float): The time taken for the simulation or float('inf') if there was an error.
+    """
+
+    url = f"{protocol}://{server_ip}:{port}/simulate"
+    headers = {'Content-Type': 'application/json'}
+    
+    data = {
+        "gate_p1": gate_p1,
+        "gate_p2": gate_p2,
+        "thickness": thickness,
+        "car_position": car_position,
+        "car_speed": car_speed,
+        "car_angle": car_angle,
+        "list_controls": list_controls
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+        if response.status_code == 200:
+            response_data = response.json()
+            status = response_data.get("status", False)
+            time = response_data.get("time", float("inf"))
+            print("Simulation started successfully:", response.json())
+            return status, time
+        else:
+            print(f"Error: {response.status_code}, Response: {response.text}")
+            return False, float("inf")
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+    
+if __name__ == "__main__":
+    car_position = [10, 0, 1, 50, -90]  # [x, y, z, speed, rotation]
+    gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
+    list_controls = [
+        [1, 0, 0, 0],
+        [1, 0, 0, 0],  
+        [0, 0, 1, 0],
+        [0, 1, 1, 0],  
+        [1, 0, 0, 0],
+        [1, 0, 0, 1], 
+        [0, 0, 0, 1],
+        [1, 0, 0, 1], 
+        [0, 1, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+        [0, 0, 0, 0], 
+    ]
+
+    status, time = send_simulation_request("http", "127.0.0.1", 5000, gate_position[0], gate_position[1], gate_position[2], [car_position[0], car_position[1], car_position[2]], car_position[3], car_position[4], list_controls)
+
+    print("Simulation Status:", status)
+    print("Simulation Time:", time)
