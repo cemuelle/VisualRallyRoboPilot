@@ -10,7 +10,7 @@ import pickle
 import lzma
 
 class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
-    def __init__(self, message_processing_callback = None):
+    def __init__(self, message_processing_callback = None, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0):
         super().__init__()
         self.command_directions = { "w":"forward", "s":"back", "d":"right", "a":"left" }
 
@@ -27,7 +27,7 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
         self.recording = False
         self.record_image = False
 
-        self.setInitialPosition([0,0,0], 0, 0)
+        self.setInitialPosition(initial_position, initial_angle, initial_speed)
 
         self.recorded_data = []
     def collectMsg(self, msg):

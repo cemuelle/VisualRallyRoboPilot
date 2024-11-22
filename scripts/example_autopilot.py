@@ -43,7 +43,7 @@ if  __name__ == "__main__":
 
     nn_brain = ExampleNNMsgProcessor()
     # data_window = DataCollectionUI(nn_brain.process_message)
-    data_window = DataCollectionEvaluatePilot(nn_brain.process_message)
+    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[10,0,1], initial_angle=90, initial_speed=50)
     # data_window.show()
 
     app.exec()
