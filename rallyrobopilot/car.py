@@ -65,6 +65,10 @@ class Car(Entity):
         self.particle_pivot = Entity(parent = self)
         self.particle_pivot.position = (0, -1, -2)
 
+        # Load the particles when initializing the car to avoid a lag the first time the forward input is pressed
+        self.particles = Particles(self, self.particle_pivot.world_position - (0, 1, 0))
+        self.particles.destroy(1)
+
         # TrailRenderer
         self.trail_pivot = Entity(parent = self, position = (0, -1, 2))
 
