@@ -37,6 +37,7 @@ class Car(Entity):
         self.turning_speed = 5
         self.pivot_rotation_distance = 1
 
+        self.reset_speed = 0
         self.reset_position = (0, 0, 0)
         self.reset_rotation = (0, 0, 0)
 
@@ -63,6 +64,10 @@ class Car(Entity):
         self.particle_amount = 0.07 # The lower, the more
         self.particle_pivot = Entity(parent = self)
         self.particle_pivot.position = (0, -1, -2)
+
+        # Load the particles when initializing the car to avoid a lag the first time the forward input is pressed
+        self.particles = Particles(self, self.particle_pivot.world_position - (0, 1, 0))
+        self.particles.destroy(1)
 
         # TrailRenderer
         self.trail_pivot = Entity(parent = self, position = (0, -1, 2))
@@ -403,8 +408,10 @@ class Car(Entity):
 
         print("reseting at", str(self.position), " --> ", self.rotation_y)
 
-        camera.world_rotation_y = self.rotation_y
         self.speed = 0
+        self.speed = self.reset_speed
+
+        camera.world_rotation_y = self.rotation_y
         self.velocity_y = 0
         self.timer_running = False
         for trail in self.trails:

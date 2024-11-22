@@ -71,6 +71,7 @@ remote_control_commands = [
     #   Reset parameters command
     RemoteControlCommand(equals(b'set'), contains(b"position", b"speed"), float_tuple),
     RemoteControlCommand(equals(b'set'), equals(b"rotation"), is_float),
+    RemoteControlCommand(equals(b'set'), equals(b"speed"), is_float),
     RemoteControlCommand(equals(b'set'), equals(b"ray"), contains(b'visible', b'hidden'))
 ]
 
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     acc = RemoteCommandParser()
     acc.add(b'set position 1.34,12,43;')
     acc.add(b'set rotation 234;')
-    acc.add(b'set speed 234,54.2,67.2;')
+    acc.add(b'set speed 67.2;')
     acc.add(b'reset;')
     data = (-1.23124,-1235435.45345,5345.24134234)
 

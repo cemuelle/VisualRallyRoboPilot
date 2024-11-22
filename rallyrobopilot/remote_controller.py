@@ -3,6 +3,9 @@ from ursina import *
 import socket
 import select
 import numpy as np
+import json
+from ga.gate import Gate
+import time
 
 from flask import Flask, request, jsonify
 
@@ -31,9 +34,12 @@ class RemoteController(Entity):
 
         self.client_commands = RemoteCommandParser()
 
-        self.reset_location = (0,0,0)
-        self.reset_speed = (0,0,0)
-        self.reset_rotation = 0
+        self.list_controls = []
+        self.start_simulate_controls = False
+        self.pass_gate = False
+        self.start_time = 0
+        self.last_control = 0
+        self.gate = Gate()
 
         #   Period for recording --> 0.1 secods = 10 times a second
         self.sensing_period = PERIOD_REMOTE_SENSING
@@ -51,7 +57,73 @@ class RemoteController(Entity):
 
             try:
                 self.client_commands.add(command_data['command'].encode())
-                return jsonify({"status": "Command received"}), 200
+                return jsonify({"status": f"Command received: {command_data['command']}"}), 200
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+            
+        @flask_app.route('/simulate', methods=['POST'])
+        def simulate_route():
+            if self.car is None:
+                return jsonify({"error": "No car connected"}), 400
+
+            command_data = request.json
+            
+            # Validate the presence and format of each required parameter
+            required_fields = {
+                "gate_p1": list,
+                "gate_p2": list,
+                "thickness": (int, float),
+                "car_position": list,
+                "car_speed": (int, float),
+                "car_angle": (int, float),
+                "list_controls": list
+            }
+
+            # Check if all required fields are present and have the correct type
+            for field, expected_type in required_fields.items():
+                if field not in command_data:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+                if not isinstance(command_data[field], expected_type):
+                    return jsonify({"error": f"Invalid type for field: {field}. Expected {expected_type}"}), 400
+                
+            # Additional checks for specific fields
+            if len(command_data['gate_p1']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p1']):
+                return jsonify({"error": "Invalid format for gate_p1. Expected a list of two numbers."}), 400
+
+            if len(command_data['gate_p2']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p2']):
+                return jsonify({"error": "Invalid format for gate_p2. Expected a list of two numbers."}), 400
+
+            if len(command_data['car_position']) != 3 or not all(isinstance(x, (int, float)) for x in command_data['car_position']):
+                return jsonify({"error": "Invalid format for car_position. Expected a list of three numbers."}), 400
+
+            if not isinstance(command_data['list_controls'], list) or len(command_data['list_controls']) == 0 or not all(
+                    isinstance(control, list) and len(control) == 4 and all(isinstance(x, (int, float)) for x in control)
+                    for control in command_data['list_controls']
+            ):
+                return jsonify({"error": "Invalid format for list_controls. Expected a non-empty list of lists, each containing four numbers."}), 400
+        
+
+            try:
+                self.start_simulate_controls = True
+                self.pass_gate = False
+
+                self.gate.set_gate(command_data['gate_p1'], command_data['gate_p2'], command_data['thickness'])
+                # define car position, speed and rotation and then reset the car
+                self.car.reset_position = command_data['car_position']
+                self.car.reset_speed = command_data['car_speed']
+                self.car.reset_orientation = (0, command_data['car_angle'], 0)
+                self.car.reset_car()
+
+                self.list_controls = command_data['list_controls']
+                self.start_time = time.time()
+
+                while self.start_simulate_controls:
+                    time.sleep(0.1)
+
+                if self.pass_gate:
+                    return jsonify({"status": True, "time": self.last_control - self.start_time}), 200
+                else:
+                    return jsonify({"status": False, "time": float('inf')}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
     
@@ -60,8 +132,38 @@ class RemoteController(Entity):
             return jsonify(self.get_sensing_data()), 200
 
     def update(self):
-        self.update_network()
+        if not self.start_simulate_controls:
+            self.update_network()
+            self.process_remote_commands()
+        else :
+            self.process_simulate_controls()
         self.process_sensing()
+
+    def process_simulate_controls(self):
+        if self.car is None:
+            return
+        
+        if time.time() - self.last_control >= self.sensing_period:
+            car_position = self.car.world_position
+            if self.gate.is_car_through((car_position[0], car_position[2])):
+                self.last_control = time.time()
+                self.pass_gate = True
+                self.start_simulate_controls = False
+                return
+
+            len_controls = len(self.list_controls)
+            if len_controls > 0:
+                controls = self.list_controls.pop(0)
+
+                held_keys['w'] = controls[0] == 1
+                held_keys['s'] = controls[1] == 1
+                held_keys['d'] = controls[2] == 1
+                held_keys['a'] = controls[3] == 1
+
+                self.last_control = time.time()
+            else:
+                self.start_simulate_controls = False
+
 
     def process_sensing(self):
         if self.car is None or self.connected_client is None:
@@ -166,8 +268,9 @@ class RemoteController(Entity):
                         self.car.reset_position = commands[2]
                     elif commands[1] == b'rotation':
                         self.car.reset_orientation = (0, commands[2], 0)
-                    elif commands[1] == b'speed':
-                        self.car.reset_speed = commands[2]
+                    elif commands[1] == b'speed':        
+                        self.car.reset_speed = float(commands[2])
+
                     elif commands[1] == b'ray':
                         self.car.multiray_sensor.set_enabled_rays(commands[2] == b'visible')
 
