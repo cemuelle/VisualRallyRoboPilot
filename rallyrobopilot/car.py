@@ -37,6 +37,7 @@ class Car(Entity):
         self.turning_speed = 5
         self.pivot_rotation_distance = 1
 
+        self.reset_speed = 0
         self.reset_position = (0, 0, 0)
         self.reset_rotation = (0, 0, 0)
 
@@ -403,8 +404,10 @@ class Car(Entity):
 
         print("reseting at", str(self.position), " --> ", self.rotation_y)
 
-        camera.world_rotation_y = self.rotation_y
         self.speed = 0
+        self.speed = self.reset_speed
+
+        camera.world_rotation_y = self.rotation_y
         self.velocity_y = 0
         self.timer_running = False
         for trail in self.trails:

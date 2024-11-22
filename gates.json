@@ -1,0 +1,97 @@
+{
+    "gate_positions_blue": [
+      {
+        "p1_gate": [-3, 84],
+        "p2_gate": [-20, -98],
+        "start_position": [0, 0],
+        "start_orientation": -90
+      },
+      {
+        "p1_gate": [100, -187],
+        "p2_gate": [108, -168],
+        "start_position": [-8, -95],
+        "start_orientation": -218
+      },
+      {
+        "p1_gate": [301, -148],
+        "p2_gate": [291, -129],
+        "start_position": [107, -179],
+        "start_orientation": -242
+      },
+      {
+        "p1_gate": [318, -66],
+        "p2_gate": [346, -80],
+        "start_position": [301, -137],
+        "start_orientation": 58
+      },
+      {
+        "p1_gate": [360, -3],
+        "p2_gate": [350, -13],
+        "start_position": [329, -77],
+        "start_orientation": 38
+      },
+      {
+        "p1_gate": [258, -6],
+        "p2_gate": [269, 9],
+        "start_position": [354, -9],
+        "start_orientation": -60
+      },
+      {
+        "p1_gate": [231, -30],
+        "p2_gate": [210, -25],
+        "start_position": [263, 1],
+        "start_orientation": 291
+      },
+      {
+        "p1_gate": [119, -37],
+        "p2_gate": [140, -33],
+        "start_position": [220, -26],
+        "start_orientation": 184
+      },
+      {
+        "p1_gate": [0, -15],
+        "p2_gate": [0, 15],
+        "start_position": [130, -38],
+        "start_orientation": 360
+      }
+    ],
+    "gate_positions_red": [
+      {
+        "p1_gate": [-69, -27],
+        "p2_gate": [-84, -6],
+        "start_position": [235, 31],
+        "start_orientation": -126
+      },
+      {
+        "p1_gate": [-135, -30],
+        "p2_gate": [-164, -30],
+        "start_position": [-76, -17],
+        "start_orientation": -46
+      },
+      {
+        "p1_gate": [-121, 16],
+        "p2_gate": [-160, 28],
+        "start_position": [-145, -30],
+        "start_orientation": 66
+      },
+      {
+        "p1_gate": [-17, 107],
+        "p2_gate": [-20, 123],
+        "start_position": [-136, 26],
+        "start_orientation": 92
+      },
+      {
+        "p1_gate": [85, 135],
+        "p2_gate": [87, 143],
+        "start_position": [-11, 118],
+        "start_orientation": -268
+      },
+      {
+        "p1_gate": [232, 51],
+        "p2_gate": [248, 23],
+        "start_position": [84, 141],
+        "start_orientation": -105
+      }
+    ]
+  }
+  

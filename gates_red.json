@@ -1,0 +1,41 @@
+{
+    "gate_positions_red": [
+      {
+        "p1_gate": [-69, -27],
+        "p2_gate": [-84, -6],
+        "start_position": [235, 31],
+        "start_orientation": -126
+      },
+      {
+        "p1_gate": [-135, -30],
+        "p2_gate": [-164, -30],
+        "start_position": [-76, -17],
+        "start_orientation": -46
+      },
+      {
+        "p1_gate": [-121, 16],
+        "p2_gate": [-160, 28],
+        "start_position": [-145, -30],
+        "start_orientation": 66
+      },
+      {
+        "p1_gate": [-17, 107],
+        "p2_gate": [-20, 123],
+        "start_position": [-136, 26],
+        "start_orientation": 92
+      },
+      {
+        "p1_gate": [85, 135],
+        "p2_gate": [87, 143],
+        "start_position": [-11, 118],
+        "start_orientation": -268
+      },
+      {
+        "p1_gate": [232, 51],
+        "p2_gate": [248, 23],
+        "start_position": [84, 141],
+        "start_orientation": -105
+      }
+    ]
+  }
+  
