@@ -179,6 +179,7 @@ class RemoteController(Entity):
             snapshot.car_speed = self.car.speed
             snapshot.car_angle = self.car.rotation_y
             snapshot.raycast_distances = self.car.multiray_sensor.collect_sensor_values()
+            snapshot.number_of_collisions = self.car.collisions
 
             #   Collect last rendered image
             tex = base.win.getDisplayRegion(0).getScreenshot()
@@ -261,7 +262,6 @@ class RemoteController(Entity):
                     held_keys['d'] = False
                     held_keys['a'] = False
 
-
                 elif commands[0] == b'set':
                     if commands[1] == b'position':
                         self.car.reset_position = commands[2]
@@ -274,6 +274,9 @@ class RemoteController(Entity):
 
                 elif commands[0] == b'reset':
                     self.car.reset_car()
+
+                elif commands[0] == b'reset_collisions':
+                    self.car.collisions = 0
 
             #   Error is thrown when commands do not fit the model --> disconnect client
             except Exception as e:

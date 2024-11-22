@@ -83,6 +83,7 @@ class Car(Entity):
         # Collision
         self.copy_normals = False
         self.hitting_wall = False
+        self.collisions = 0
 
 
         self.track = None
@@ -374,6 +375,8 @@ class Car(Entity):
                 OBSTACLE_DISPLACEMENT_MARGIN = 1
                 self.x += (front_collision.world_normal * OBSTACLE_DISPLACEMENT_MARGIN).x
                 self.z += (front_collision.world_normal * OBSTACLE_DISPLACEMENT_MARGIN).z
+
+                self.collisions += 1
 
                 return 0
 

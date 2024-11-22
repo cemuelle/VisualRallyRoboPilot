@@ -63,3 +63,77 @@ class Gate:
 
         # Check if the distance is within the given thickness
         return distance_from_line <= self.thickness
+    
+class GateSequence:
+    """
+    Initializes the gate sequence with the given parameters.
+    gates: The list of gates in the sequence.
+    """
+    def __init__(self, gates=None):
+        self.gates = gates if gates else []
+        self.current_gate = 0
+
+    """
+    Adds a gate to the sequence.
+    gate: The gate to add.
+    """
+    def add_gate(self, gate):
+        self.gates.append(gate)
+
+    """
+    Adds multiple gates to the sequence.
+    gates: The list of gates to add.
+    """
+    def add_gates(self, gates):
+        self.gates.extend(gates)
+
+    """
+    Gets the next gate to pass.
+    """
+    def get_current_gate(self):
+        return self.gates[self.current_gate]
+    
+    """
+    Gets the index of the current gate.
+    """
+    def get_current_gate_index(self):
+        return self.current_gate
+    
+    """
+    Gets the number of gates in the sequence.
+    """
+    def get_number_of_gates(self):
+        return len(self.gates)
+    
+    """
+    Resets the gate sequence.
+    """
+    def reset(self):
+        self.gates = []
+        current_gate = 0
+    
+    """
+    Restarts the gate sequence.
+    """
+    def restart(self):
+        self.current_gate = 0
+
+    """
+    Checks if the car has passed the current gate in the sequence.
+    car_position: The position of the car.
+    """
+    def check_pass_gate(self, car_position):
+        if self.has_crossed_all_gates():
+            return True
+        
+        current_gate = self.gates[self.current_gate]
+        if current_gate.is_car_through(car_position):
+            self.current_gate += 1
+            return True
+        return False
+
+    """
+    Checks if the car has crossed all the gates in the sequence.
+    """
+    def has_crossed_all_gates(self):
+        return self.current_gate == len(self.gates)

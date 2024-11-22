@@ -18,6 +18,7 @@ class SensingSnapshot:
         self.car_speed = 0
         self.car_angle = 0
         self.raycast_distances = [0]
+        self.number_of_collisions = 0
         self.image = None
 
     def pack(self):
