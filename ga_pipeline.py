@@ -142,24 +142,23 @@ def mutate(individual, mutation_rate):
     Returns:
     - individual: The mutated individual with updated controls
     """
-    controls = individual[1]  # Get the controls from the individual
-    
-    # Iterate over each control
-    for i in range(len(controls)):
-        # If the control is a tuple or list, mutate each element in it
-        if isinstance(controls[i], (tuple, list)):
-            controls[i] = tuple(
-                np.random.choice([0, 1], size=len(controls[i])).tolist()
-            )  # Convert to tuple and avoid np.int64
-        # If the control is an np.int64 (or similar), mutate it directly
-        elif isinstance(controls[i], np.int64):
-            controls[i] = int(np.random.choice([0, 1]))  # Convert to standard int
-        else:
-            # Otherwise, handle as normal, assuming it should be a normal int
-            if np.random.rand() < mutation_rate:
-                controls[i] = int(np.random.choice([0, 1]))  # Convert to int
+    controls = individual[0][1]  # Get the controls from the individual
+    newControls = []
 
-    return (individual[0], controls)  # Return the mutated individual
+    for i in range(len(controls)):
+        # for each control
+        mutatedControls = []
+        for j in range (4):
+            # for each WASD control
+            if np.random.rand() < mutation_rate:
+                # if the mutation happens (random number)
+                mutatedControls.append(0 if controls[i][j] == 1 else 1)
+            else:
+                mutatedControls.append(controls[i][j])
+        newControls.append(tuple(mutatedControls))
+
+    return [(individual[0][0], newControls)]  # Return the mutated individual
+
 
 def mutate_population(population, mutation_rate):
     """
