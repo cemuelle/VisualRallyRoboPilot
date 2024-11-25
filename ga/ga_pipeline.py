@@ -166,6 +166,89 @@ def mutate(individual, mutation_rate):
 
     return (name, newControls)  # Return the mutated individual
 
+
+def smoothingTemplate(individual, mutation_rate, directions):
+    """
+    Template for the smoothing mutators. apply smoothing patterns through a convolution (size 3) on the controls. (for example, W at times 0 to 2 are [1,1,0], so the smoothing sets it to [1,1,1])
+    The patterns can smooth towards 1 or 0, it's decided by the "control" input tab.
+    
+    Parameters:
+    - individual: A tuple of (name, controls)
+    - mutation_rate: Probability of mutation per control in each individual
+    - directions: A list of values between (-1, 0 and 1) for each 4 controls (WSAD), corresponding to the smoothing direction:
+        -1 => no smoothing
+        0  => smoothing toward 0
+        1  => smoothing toward 1
+    
+    Returns:
+    - individual: The mutated individual with updated controls
+
+    current smoothing patterns:
+    a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
+    """
+    
+    name, controlsRaw = individual
+    controls = list(map(list, zip(*controlsRaw)))  # transpose the controls to facilitate working with a window
+
+    for j in range(4):
+        # for each WASD control
+        a = directions[j]
+        if a == 0 or a == 1:
+            b = 1 - a
+            patterns = [([a,a,b],[a,a,a]), ([a,b,a],[a,a,a]), ([a,b,a],[a,a,b]), ([b,a,a],[a,a,a])] # for each pattern, if the window matches the first list and the mutation happen, replaces the window by the pattern second list
+            for i in range(len(controls[0])-2):
+                # for each control (minus 2 since we move a window of size 3)
+                commands = [controls[j][i],controls[j][i+1],controls[j][i+1]] # gets the window
+                for k in patterns:
+                    # for each pattern
+                    if commands == k[0]: 
+                        if np.random.rand() < mutation_rate:
+                            # if the window matches the pattern and the mutation happens (random number)
+                            controls[j][i],controls[j][i+1],controls[j][i+2] = k[1]
+                            print("turned ", commands, " into ", k[1], " boss. (", j, ", ", i, ")")
+
+    reshapedControls = list(map(list, zip(*controls)))
+    addingTuples = []
+    for i in reshapedControls:
+        addingTuples.append(tuple(i))
+    return [(name, addingTuples)]  # Return the mutated individual
+
+
+def mutateFaster(individual, mutation_rate):
+    """
+    Mutate the individual's controls based on the mutation_rate.
+    This will compare successive values for an input and try and smooth it, here, only the W.
+    
+    Parameters:
+    - individual: A tuple of (name, controls)
+    - mutation_rate: Probability of mutation per control in each individual
+    
+    Returns:
+    - individual: The mutated individual with updated controls
+
+    current smoothing patterns:
+    a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
+    """
+    return smoothingTemplate(individual, mutation_rate, [1,-1,-1,-1])
+
+
+def mutateTurner(individual, mutation_rate):
+    """
+    Mutate the individual's controls based on the mutation_rate.
+    This will compare successive values for an input and try and smooth it, here, only the W (towards 0) and A-D (towards 1).
+    
+    Parameters:
+    - individual: A tuple of (name, controls)
+    - mutation_rate: Probability of mutation per control in each individual
+    
+    Returns:
+    - individual: The mutated individual with updated controls
+
+    current smoothing patterns:
+    a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
+    """
+    return smoothingTemplate(individual, mutation_rate, [0,-1,1,1])
+
 def mutate_population(population, mutation_rate):
     """
     Mutates the individuals in the population based on mutation_rate.
