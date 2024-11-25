@@ -281,8 +281,7 @@ class RemoteController(Entity):
             #   Error is thrown when commands do not fit the model --> disconnect client
             except Exception as e:
                 print("Invalid command --> disconnecting : " + str(e))
-                self.connected_client.close()
-                self.connected_client = None
+                self.disconnect()
 
     def update_network(self):
         if self.connected_client is not None:
@@ -296,8 +295,11 @@ class RemoteController(Entity):
                         break
                     self.client_commands.add(recv_data)
 
+            except socket.timeout:
+                pass
             except Exception as e:
                 printv(e)
+                self.disconnect()
 
         #   No controller connected
         else:
@@ -324,3 +326,9 @@ class RemoteController(Entity):
         # self.listen_socket.setblocking(False)
         self.listen_socket.settimeout(0.01)
         self.listen_socket.listen()
+
+    def disconnect(self):
+        if self.connected_client:
+            self.connected_client.close()
+            self.connected_client = None
+        self.open_connection_socket()
