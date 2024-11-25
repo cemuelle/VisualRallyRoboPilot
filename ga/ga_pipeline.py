@@ -62,7 +62,7 @@ def add_fitness(individual_controls):
         )
 
         # Assign fitness score (inverse of time taken; higher is better)
-        fitness = time if status else 0
+        fitness = time if status else 100
         scored_population.append((individual_id, controls, fitness))
         print(individual_id,controls,fitness)
         print("\n")
@@ -79,8 +79,9 @@ def elitism(pop, elitism_count):
         individual_id, controls, fitness = sorted_pop[i]
         
         # Create the same structure as the child individuals (name, controls)
-        elites.append(individual_id,controls,fitness)
+        elites.append((individual_id,controls,fitness))
     print(elites)
+    print("\n")
     return elites
 
 def crossover(parent1, parent2):
@@ -103,7 +104,7 @@ def crossover(parent1, parent2):
     
     return child
 
-def add_crossover_pop(pop, population_size, elite_count):
+def add_crossover_pop(pop, population_size=20, elite_count=4):
     
     new_pop=[]
 
@@ -146,24 +147,24 @@ def mutate(individual, mutation_rate):
     Returns:
     - individual: The mutated individual with updated controls
     """
-    controls = individual[1]  # Get the controls from the individual
     
-    # Iterate over each control
-    for i in range(len(controls)):
-        # If the control is a tuple or list, mutate each element in it
-        if isinstance(controls[i], (tuple, list)):
-            controls[i] = tuple(
-                np.random.choice([0, 1], size=len(controls[i])).tolist()
-            )  # Convert to tuple and avoid np.int64
-        # If the control is an np.int64 (or similar), mutate it directly
-        elif isinstance(controls[i], np.int64):
-            controls[i] = int(np.random.choice([0, 1]))  # Convert to standard int
-        else:
-            # Otherwise, handle as normal, assuming it should be a normal int
-            if np.random.rand() < mutation_rate:
-                controls[i] = int(np.random.choice([0, 1]))  # Convert to int
+    name, controls = individual  # Get the controls from the individual
+    
+    newControls = []
 
-    return (individual[0], controls)  # Return the mutated individual
+    for i in range(len(controls)):
+        # for each control
+        mutatedControls = []
+        for j in range (4):
+            # for each WASD control
+            if np.random.rand() < mutation_rate:
+                # if the mutation happens (random number)
+                mutatedControls.append(0 if controls[i][j] == 1 else 1)
+            else:
+                mutatedControls.append(controls[i][j])
+        newControls.append(tuple(mutatedControls))
+
+    return (name, newControls)  # Return the mutated individual
 
 def mutate_population(population, mutation_rate):
     """
@@ -702,7 +703,111 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count)
         (0, 0, 0, 0),
         (0, 0, 0, 0)]),
     ]
-
+    """individual_controls = [('individual_0',
+        [(1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (0, 0, 1, 0),
+        (1, 0, 1, 0),
+        (1, 0, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0)]),
+        ('individual_9',
+        [(1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (0, 0, 1, 0),
+        (1, 0, 1, 0),
+        (1, 0, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0)]),
+    ]"""
     
     
 
@@ -736,4 +841,4 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count)
 
     return next_generation
 
-final_pop = genetic_algorithm(generation=10, mutation_rate=0.8, population_size=10, elitism_count=2)
+final_pop = genetic_algorithm(generation=10, mutation_rate=0.2, population_size=10, elitism_count=2)
