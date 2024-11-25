@@ -36,8 +36,17 @@ class ExampleNNMsgProcessor:
             for command, start in commands:
                 data_collector.onCarControlled(command, start)
         else:
+            # data_collector.saveRecord(close_after_save=True)
+            data_collector.onCarControlled("forward", False)
+            data_collector.onCarControlled("back", False)
+            data_collector.onCarControlled("right", False)
+            data_collector.onCarControlled("left", False)
             data_collector.network_interface.disconnect()
-            data_collector.saveRecord(close_after_save=True)
+
+            for snapshot in data_collector.recorded_data:
+                print("Controls:", snapshot.current_controls)
+
+            QtWidgets.QApplication.quit()
 
 if  __name__ == "__main__":
     import sys
