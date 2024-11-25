@@ -121,9 +121,9 @@ class RemoteController(Entity):
                     time.sleep(0.1)
 
                 if self.pass_gate:
-                    return jsonify({"status": True, "time": self.last_control - self.start_time}), 200
+                    return jsonify({"status": True, "time": self.last_control - self.start_time, "collisions": self.car.collisions}), 200
                 else:
-                    return jsonify({"status": False, "time": float('inf')}), 200
+                    return jsonify({"status": False, "time": float('inf'), "collisions": self.car.collisions}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
     

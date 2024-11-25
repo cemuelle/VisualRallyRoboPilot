@@ -414,6 +414,8 @@ class Car(Entity):
         self.speed = 0
         self.speed = self.reset_speed
 
+        self.collisions = 0
+
         camera.world_rotation_y = self.rotation_y
         self.velocity_y = 0
         self.timer_running = False
