@@ -2,15 +2,17 @@ import os.path
 
 from rallyrobopilot import *
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QCoreApplication
 from PyQt6 import QtCore, QtWidgets, QtGui
 from PyQt6 import uic
+
+from ga.gate import Gate
 
 import pickle
 import lzma
 
 class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
-    def __init__(self, message_processing_callback = None, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0):
+    def __init__(self, message_processing_callback = None, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0, record = True, record_image = False):
         super().__init__()
         self.command_directions = { "w":"forward", "s":"back", "d":"right", "a":"left" }
 
@@ -24,8 +26,10 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
 
         self.saving_worker = None
 
-        self.recording = False
-        self.record_image = False
+        self.recording = record
+        self.record_image = record_image
+
+        self.gate = Gate()
 
         self.setInitialPosition(initial_position, initial_angle, initial_speed)
 
@@ -36,7 +40,6 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
                 msg.image = None
 
             self.recorded_data.append(msg)
-            self.nbrSnapshotSaved.setText(str(len(self.recorded_data)))
 
         if self.message_processing_callback is not None:
             self.message_processing_callback(msg, self)
@@ -56,7 +59,6 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
     #     nbr_snapshots_to_forget = self.forgetSnapshotNumber.value() if len(self.recorded_data) > self.forgetSnapshotNumber.value() else len(self.recorded_data)-1
 
     #     self.recorded_data = self.recorded_data[:-nbr_snapshots_to_forget]
-    #     self.nbrSnapshotSaved.setText(str(len(self.recorded_data)))
 
     #     self.network_interface.send_cmd("set position "+ str(self.recorded_data[-1].car_position)[1:-1].replace(" ","")+";")
     #     self.network_interface.send_cmd("set rotation "+ str(self.recorded_data[-1].car_angle)+";")
@@ -66,12 +68,12 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
 
     def toggleRecord(self):
         self.recording = not self.recording
-        self.recordDataButton.setText("Recording..." if self.recording else "Record")
+
     def onCarControlled(self, direction, start):
         command_types = ["release", "push"]
         self.network_interface.send_cmd(command_types[start] + " " + direction+";")
 
-    def saveRecord(self):
+    def saveRecord(self, close_after_save=False):
         if self.saving_worker is not None:
             print("[X] Already saving !")
             return
@@ -82,8 +84,6 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
 
         if self.recording:
             self.toggleRecord()
-
-        self.saveRecordButton.setText("Saving ...")
 
         record_name = "record_%d.npz"
         fid = 0
@@ -102,11 +102,11 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
 
         self.saving_worker = ThreadedSaver(record_name % fid, self.recorded_data)
         self.recorded_data = []
-        self.nbrSnapshotSaved.setText("0")
         self.saving_worker.finished.connect(self.onRecordSaveDone)
+        if close_after_save:
+            self.saving_worker.finished.connect(QCoreApplication.quit)
         self.saving_worker.start()
 
     def onRecordSaveDone(self):
         print("[+] Recorded data saved to", self.saving_worker.path)
         self.saving_worker = None
-        self.saveRecordButton.setText("Save")

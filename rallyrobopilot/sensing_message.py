@@ -97,7 +97,7 @@ class NetworkDataCmdInterface:
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 125536)
         self.socket.connect((address, port))
         # self.socket.setblocking(False)
-        self.socket.settimeout(0.05)
+        self.socket.settimeout(0.1)
 
         self.msg_mngr = SensingSnapshotManager(callback)
 
@@ -122,4 +122,10 @@ class NetworkDataCmdInterface:
         print("sensing_snapshot.car.position =", sensing_snapshot.car_position)
 
         imageio.imsave("last_image.png", sensing_snapshot.image)
+
+    def disconnect(self):
+        try:
+            self.socket.close()
+        except Exception as e:
+            print(f"Error while closing the socket: {e}")
 

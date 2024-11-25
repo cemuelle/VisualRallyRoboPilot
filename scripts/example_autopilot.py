@@ -28,10 +28,16 @@ class ExampleNNMsgProcessor:
 
     def process_message(self, message, data_collector):
 
-        commands = self.nn_infer(message)
+        car_position = message.car_position
 
-        for command, start in commands:
-            data_collector.onCarControlled(command, start)
+        if not data_collector.gate.is_car_through((car_position[0], car_position[2])):
+            commands = self.nn_infer(message)
+
+            for command, start in commands:
+                data_collector.onCarControlled(command, start)
+        else:
+            data_collector.network_interface.disconnect()
+            data_collector.saveRecord(close_after_save=True)
 
 if  __name__ == "__main__":
     import sys
@@ -42,8 +48,7 @@ if  __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     nn_brain = ExampleNNMsgProcessor()
-    # data_window = DataCollectionUI(nn_brain.process_message)
-    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[10,0,1], initial_angle=90, initial_speed=50)
-    # data_window.show()
+    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[10,0,1], initial_angle=-90, initial_speed=50, record=True, record_image=False)
+    data_window.gate.set_gate([-140, -21], [-165, -24], 5)
 
     app.exec()
