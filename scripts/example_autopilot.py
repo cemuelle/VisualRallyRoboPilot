@@ -15,16 +15,60 @@ Be warned that this could also cause crash on the client side if socket sending 
 /!\ Do not work directly in this file (make a copy and rename it) to prevent future pull from erasing what you write here.
 """
 
+import torch
+import torch.nn as nn
+
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+        self.fc1 = nn.Linear(16, 32)
+        self.fc2 = nn.Linear(32, 32)
+        self.fc3 = nn.Linear(32, 4)
+        self.sigmoid = nn.Sigmoid()
+        self.dropout = nn.Dropout(p=0.1)
+
+    def forward(self, x):
+        x = self.dropout(self.sigmoid(self.fc1(x)))
+        x = self.dropout(self.sigmoid(self.fc2(x)))
+        return self.sigmoid(self.fc3(x))
+
 
 class ExampleNNMsgProcessor:
     def __init__(self):
         self.always_forward = True
+        self.model = MLP()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.load_state_dict(torch.load("models/MLP_model.pth"))
+        self.model.to(self.device)
+        self.model.eval()
 
     def nn_infer(self, message):
-        #   Do smart NN inference here
+        X = torch.tensor([list(message.raycast_distances) + [message.car_speed]], dtype=torch.float32).to(self.device)
+        with torch.no_grad():
+            output = self.model(X)
 
+        output_list = output.tolist()[0]
+        formatted_output = ["{:.4f}".format(x) for x in output_list] 
 
-        return [("forward", True)]
+        forward = float(formatted_output[0]) > 0.5
+        backward = float(formatted_output[1]) > 0.5
+        left = float(formatted_output[2]) > 0.5
+        right = float(formatted_output[3]) > 0.5
+
+        car_speed = message.car_speed
+
+        if not forward and not backward and abs(car_speed) < 0.3:
+            if car_speed < 0:
+                backward = True
+            else:
+                forward = True
+
+        return [
+            ("forward", forward),
+            ("back", backward),
+            ("left", left),
+            ("right", right)
+        ]
 
     def process_message(self, message, data_collector):
 
@@ -44,7 +88,7 @@ class ExampleNNMsgProcessor:
             data_collector.network_interface.disconnect()
 
             for snapshot in data_collector.recorded_data:
-                print("Controls:", snapshot.current_controls)
+                print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
 
             QtWidgets.QApplication.quit()
 
@@ -57,7 +101,7 @@ if  __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     nn_brain = ExampleNNMsgProcessor()
-    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[10,0,1], initial_angle=-90, initial_speed=50, record=True, record_image=False)
-    data_window.gate.set_gate([-140, -21], [-165, -24], 5)
+    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[130,0,-38], initial_angle=-360, initial_speed=10, record=True, record_image=False)
+    data_window.gate.set_gate([0, -15], [0, 15], 5)
 
     app.exec()

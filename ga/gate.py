@@ -13,7 +13,7 @@ class Gate:
     def __init__(self, gate_p1=None, gate_p2=None, thickness=5):
         self.gate_p1 = gate_p1 if gate_p1 else [0, -15]
         self.gate_p2 = gate_p2 if gate_p2 else [0, 15]
-        self.gate_thickness = thickness
+        self.thickness = thickness
 
     """
     Sets the gate with the given parameters.
