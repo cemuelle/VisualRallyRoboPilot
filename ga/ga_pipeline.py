@@ -38,7 +38,18 @@ def load_data(path):
 
 def add_fitness(individual_controls):
     scored_population = []
-    for individual_id, controls in individual_controls:
+    for idx, individual in enumerate(individual_controls):
+        if isinstance(individual, tuple):
+            if len(individual) == 3:  # Already has fitness
+                individual_id, controls, _ = individual
+            elif len(individual) == 2:  # Initial population
+                individual_id, controls = individual
+            else:
+                print(f"Unexpected tuple length at index {idx}: {individual}")
+                continue  # Skip this entry
+        else:
+            print(f"Unexpected entry at index {idx}: {individual}")
+            continue  # Skip non-tuple entries
         # Assume some initial parameters for the gate and car
         gate_p1 = [-140,-21]
         gate_p2 = [-165,-24]
@@ -256,10 +267,19 @@ def mutate_population(population, mutation_rate):
     mutated_population = []
     
     for individual in population:
-        mutated_individual = mutate(individual, mutation_rate)
+        mutated_individual = mutateFaster(individual, mutation_rate)
         mutated_population.append(mutated_individual)
     
     return mutated_population
+
+def preprocess_population(population):
+    processed = []
+    for individual in population:
+        if isinstance(individual, list):  # Handle nested lists
+            processed.extend(individual)
+        else:
+            processed.append(individual)
+    return processed
 
 def genetic_algorithm(generation, mutation_rate, population_size, elitism_count):
 
@@ -899,6 +919,7 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count)
     # Start the evolution process for the specified number of generations
     for gen in range(generation):
         print(f"\nGeneration {gen + 1}:")
+        
         individual_with_scores = add_fitness(individual_controls)
         print(f"Fitness done {gen + 1}")
         # Step 1: Select Elite individuals
@@ -911,17 +932,20 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count)
         mutated_pop = mutate_population(crossed_pop, mutation_rate)
         print(f"mutated_pop {gen + 1}")
         # Step 4: Add the elite individuals to the mutated population
-        next_generation = elite + mutated_pop  # Elite individuals directly pass to the next generation
+        mutated_population = preprocess_population(mutated_pop)
+        next_generation = elite + mutated_population  # Elite individuals directly pass to the next generation
         print(f"create final generation {gen + 1}")
         # Step 5: Print the current population after mutation
         print("Mutated Population:")
-        for individual in next_generation:
+        """for individual in next_generation:
             print(f"Individual: {individual[0]}, Controls: {individual[1]}")
-            print("\n")
+            print("\n")"""
         
-
+        individual_controls = next_generation
+        print("\n")
+        print(individual_controls)
         print(f"ready for gen {gen + 2}")
 
     return next_generation
 
-final_pop = genetic_algorithm(generation=10, mutation_rate=0.2, population_size=10, elitism_count=2)
+final_pop = genetic_algorithm(generation=10, mutation_rate=0.2, population_size=10, elitism_count=1)
