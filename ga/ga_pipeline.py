@@ -7,7 +7,21 @@ import json
 import random
 import numpy as np
 from control_car import send_simulation_request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
+# parameters
+PROTOCOL = "http"
+SERVER_IP = "127.0.0.1"
+PORT = 5000
+
+# global variables for parameters set on init
+gate_p1 = [0, 0]
+gate_p2 = [0, 0]
+thickness = 0
+car_position = [0,0,0]  # x, y, z
+car_speed = 0
+car_angle = 0
 
 
 def load_data(path):
@@ -37,7 +51,6 @@ def load_data(path):
     return individual_controls
 
 def add_fitness(individual_controls):
-    scored_population = []
     for idx, individual in enumerate(individual_controls):
         if isinstance(individual, tuple):
             if len(individual) == 3:  # Already has fitness
@@ -50,35 +63,59 @@ def add_fitness(individual_controls):
         else:
             print(f"Unexpected entry at index {idx}: {individual}")
             continue  # Skip non-tuple entries
-        # Assume some initial parameters for the gate and car
-        gate_p1 = [-140,-21]
-        gate_p2 = [-165,-24]
-        thickness = 5
-        car_position = [10,0,1]  # x, y, z
-        car_speed = 50
-        car_angle = -90
 
-        # Evaluate the individual using the simulation
+    # Evaluate the individual using the simulation
+    def send_single_request(list_controls):
+        global gate_p1, gate_p2, thickness, car_position, car_speed, car_angle
+        name, controlsRaw = list_controls
         status, time = send_simulation_request(
-            protocol="http",
-            server_ip="127.0.0.1",
-            port=5000,
+            protocol=PROTOCOL,
+            server_ip=SERVER_IP,
+            port=PORT,
             gate_p1=gate_p1,
             gate_p2=gate_p2,
             thickness=thickness,
             car_position=car_position,
             car_speed=car_speed,
             car_angle=car_angle,
-            list_controls=controls,
+            list_controls=controlsRaw,
         )
 
-        # Assign fitness score (inverse of time taken; higher is better)
-        fitness = time if status else 100
-        scored_population.append((individual_id, controls, fitness))
-        print(individual_id,controls,fitness)
-        print("\n")
+        return [list_controls,status,time]  # Example response
 
-    return scored_population
+    # Function to execute parallel tasks
+    def run_simulation_in_parallel(n, individual_controls):
+        results = []
+        
+        # Thread pool executor
+        with ThreadPoolExecutor() as executor:
+            # Submit tasks with thread ID
+            futures = [
+                executor.submit(send_single_request, individual_controls[thread_id])
+                for thread_id in range(n)
+            ]
+            
+            # Collect results as they complete
+            for future in as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    results.append(f"Error: {e}")
+        
+        # Assign fitness score
+        scored_population = []
+        for individual,status,time in results:
+            name, controlsRaw = individual
+            fitness = time if status else 100
+            scored_population.append((name, controlsRaw, fitness))
+            print(name, controlsRaw, fitness)
+            print("\n")
+
+        return scored_population
+
+    pop = len(individual_controls)
+    return run_simulation_in_parallel(pop,individual_controls)
+
 
 def elitism(pop, elitism_count):
 
@@ -260,6 +297,24 @@ def mutateTurner(individual, mutation_rate):
     """
     return smoothingTemplate(individual, mutation_rate, [0,-1,1,1])
 
+def mutateRandomSmooth(individual, mutation_rate):
+    """
+    Mutate the individual's controls based on the mutation_rate.
+    This will compare successive values for an input and try and smooth it, here, according to 4 random values.
+    
+    Parameters:
+    - individual: A tuple of (name, controls)
+    - mutation_rate: Probability of mutation per control in each individual
+    
+    Returns:
+    - individual: The mutated individual with updated controls
+
+    current smoothing patterns:
+    a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
+    """
+    return smoothingTemplate(individual, mutation_rate, [random.randrange(-1, 2),random.randrange(-1, 2),random.randrange(-1, 2),random.randrange(-1, 2)])
+
+
 def mutate_population(population, mutation_rate):
     """
     Mutates the individuals in the population based on mutation_rate.
@@ -281,10 +336,54 @@ def preprocess_population(population):
             processed.append(individual)
     return processed
 
-def genetic_algorithm(generation, mutation_rate, population_size, elitism_count):
 
-    
-    #individual_con = load_data("data_trajectory_test/*.npz")
+def genetic_algorithm(generation, mutation_rate, population_size, elitism_count, individual_controls):
+    # Start the evolution process for the specified number of generations
+    for gen in range(generation):
+        print(f"\nGeneration {gen + 1}:")
+        individual_with_scores = add_fitness(individual_controls)
+        print(f"Fitness done {gen + 1}")
+        # Step 1: Select Elite individuals
+        elite = elitism(individual_with_scores, elitism_count)
+        print(f"Elitism done {gen + 1}")
+        # Step 2: Create the next generation using crossover
+        crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
+        print(f"crossover done {gen + 1}")
+        # Step 3: Mutate the crossed population
+        mutated_pop = mutate_population(crossed_pop, mutation_rate)
+        print(f"mutated_pop {gen + 1}")
+        # Step 4: Add the elite individuals to the mutated population
+        next_generation = elite + mutated_pop  # Elite individuals directly pass to the next generation
+        individual_controls = next_generation # apply the new generation
+        print(f"create final generation {gen + 1}")
+        # Step 5: Print the current population after mutation
+        print("Mutated Population:")
+        for individual in next_generation:
+            print(f"Individual: {individual[0]}, Controls: {individual[1]}")
+            print("\n")
+        
+
+        print(f"ready for gen {gen + 2}")
+
+    return next_generation
+
+
+
+def genAl(generation, initial_controls, section):
+    global gate_p1, gate_p2, thickness, car_angle, car_position, car_speed
+    gate_p1, gate_p2,thickness,car_position,car_speed,car_angle = section
+    '''
+    gate_p1 = [-140,-21]
+    gate_p2 = [-165,-24]
+    thickness = 5
+    car_position = [10,0,1]  # x, y, z
+    car_speed = 50
+    car_angle = -90
+    '''
+    return genetic_algorithm(generation=generation, mutation_rate=0.2, population_size=10, elitism_count=2, individual_controls=initial_controls)
+
+
+#individual_con = load_data("data_trajectory_test/*.npz")
     individual_controls = [('individual_0',
         [(1, 0, 0, 0),
         (1, 0, 0, 0),
@@ -913,39 +1012,3 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count)
     ]"""
     
     
-
-    
-
-    # Start the evolution process for the specified number of generations
-    for gen in range(generation):
-        print(f"\nGeneration {gen + 1}:")
-        
-        individual_with_scores = add_fitness(individual_controls)
-        print(f"Fitness done {gen + 1}")
-        # Step 1: Select Elite individuals
-        elite = elitism(individual_with_scores, elitism_count)
-        print(f"Elitism done {gen + 1}")
-        # Step 2: Create the next generation using crossover
-        crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
-        print(f"crossover done {gen + 1}")
-        # Step 3: Mutate the crossed population
-        mutated_pop = mutate_population(crossed_pop, mutation_rate)
-        print(f"mutated_pop {gen + 1}")
-        # Step 4: Add the elite individuals to the mutated population
-        mutated_population = preprocess_population(mutated_pop)
-        next_generation = elite + mutated_population  # Elite individuals directly pass to the next generation
-        print(f"create final generation {gen + 1}")
-        # Step 5: Print the current population after mutation
-        print("Mutated Population:")
-        """for individual in next_generation:
-            print(f"Individual: {individual[0]}, Controls: {individual[1]}")
-            print("\n")"""
-        
-        individual_controls = next_generation
-        print("\n")
-        print(individual_controls)
-        print(f"ready for gen {gen + 2}")
-
-    return next_generation
-
-final_pop = genetic_algorithm(generation=10, mutation_rate=0.2, population_size=10, elitism_count=1)
