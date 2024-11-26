@@ -384,7 +384,7 @@ def genAl(generation, initial_controls, section):
 
 
 #individual_con = load_data("data_trajectory_test/*.npz")
-    individual_controls = [('individual_0',
+individual_controls = [('individual_0',
         [(1, 0, 0, 0),
         (1, 0, 0, 0),
         (1, 0, 0, 0),
@@ -905,7 +905,7 @@ def genAl(generation, initial_controls, section):
         (0, 0, 0, 0),
         (0, 0, 0, 0)]),
     ]
-    """individual_controls = [('individual_0',
+"""individual_controls = [('individual_0',
         [(1, 0, 0, 0),
         (1, 0, 0, 0),
         (1, 0, 0, 0),
@@ -1011,4 +1011,5 @@ def genAl(generation, initial_controls, section):
         (0, 0, 0, 0)]),
     ]"""
     
-    
+paramTab =   [[-140,-21], [-165,-24], 5, [10,0,1], 50, -90]
+yay = genAl(10,individual_controls,paramTab)
