@@ -15,7 +15,7 @@ from .remote_commands import RemoteCommandParser
 
 
 REMOTE_CONTROLLER_VERBOSE = False
-PERIOD_REMOTE_SENSING = 0.1
+PERIOD_REMOTE_SENSING = 0.15
 
 def printv(str):
     if REMOTE_CONTROLLER_VERBOSE:
@@ -24,6 +24,8 @@ def printv(str):
 class RemoteController(Entity):
     def __init__(self, car = None, connection_port = 7654, flask_app=None):
         super().__init__()
+
+        self.last_time= -1
 
         self.ip_address = "127.0.0.1"
         self.port = connection_port
@@ -132,74 +134,74 @@ class RemoteController(Entity):
             return jsonify(self.get_sensing_data()), 200
 
     def update(self):
-        if not self.start_simulate_controls:
-            self.update_network()
-            self.process_remote_commands()
-        else :
-            self.process_simulate_controls()
-        self.process_sensing()
+        
+        if time.time() - self.last_time > self.sensing_period:
+            if not self.start_simulate_controls:
+                self.update_network()
+                self.process_remote_commands()
+            else :
+                self.process_simulate_controls()
+            self.process_sensing()
+            self.last_time = time.time()
 
     def process_simulate_controls(self):
         if self.car is None:
             return
         
-        if time.time() - self.last_control >= self.sensing_period:
-            car_position = self.car.world_position
-            if self.gate.is_car_through((car_position[0], car_position[2])):
-                self.last_control = time.time()
-                self.pass_gate = True
-                self.start_simulate_controls = False
-                return
+        car_position = self.car.world_position
+        if self.gate.is_car_through((car_position[0], car_position[2])):
+            self.last_control = time.time()
+            self.pass_gate = True
+            self.start_simulate_controls = False
+            return
+        len_controls = len(self.list_controls)
+        if len_controls > 0:
+            controls = self.list_controls.pop(0)
 
-            len_controls = len(self.list_controls)
-            if len_controls > 0:
-                controls = self.list_controls.pop(0)
+            held_keys['w'] = controls[0] == 1
+            held_keys['s'] = controls[1] == 1
+            held_keys['a'] = controls[2] == 1
+            held_keys['d'] = controls[3] == 1
 
-                held_keys['w'] = controls[0] == 1
-                held_keys['s'] = controls[1] == 1
-                held_keys['d'] = controls[2] == 1
-                held_keys['a'] = controls[3] == 1
-
-                self.last_control = time.time()
-            else:
-                self.start_simulate_controls = False
+            self.last_control = time.time()
+        else:
+            self.start_simulate_controls = False
 
 
     def process_sensing(self):
         if self.car is None or self.connected_client is None:
             return
 
-        if time.time() - self.last_sensing >= self.sensing_period:
-            snapshot = SensingSnapshot()
-            snapshot.current_controls = (held_keys['w'] or held_keys["up arrow"],
-                                         held_keys['s'] or held_keys["down arrow"],
-                                         held_keys['a'] or held_keys["left arrow"],
-                                         held_keys['d'] or held_keys["right arrow"])
-            snapshot.car_position = self.car.world_position
-            snapshot.car_speed = self.car.speed
-            snapshot.car_angle = self.car.rotation_y
-            snapshot.raycast_distances = self.car.multiray_sensor.collect_sensor_values()
-            snapshot.number_of_collisions = self.car.collisions
+        snapshot = SensingSnapshot()
+        snapshot.current_controls = (held_keys['w'] or held_keys["up arrow"],
+                                     held_keys['s'] or held_keys["down arrow"],
+                                     held_keys['a'] or held_keys["left arrow"],
+                                     held_keys['d'] or held_keys["right arrow"])
+        snapshot.car_position = self.car.world_position
+        snapshot.car_speed = self.car.speed
+        snapshot.car_angle = self.car.rotation_y
+        snapshot.raycast_distances = self.car.multiray_sensor.collect_sensor_values()
+        snapshot.number_of_collisions = self.car.collisions
 
-            #   Collect last rendered image
-            tex = base.win.getDisplayRegion(0).getScreenshot()
-            arr = tex.getRamImageAs("RGB")
-            data = np.frombuffer(arr, np.uint8)
-            image = data.reshape(tex.getYSize(), tex.getXSize(), 3)
-            image = image[::-1, :, :]#   Image arrives with inverted Y axis
+        #   Collect last rendered image
+        tex = base.win.getDisplayRegion(0).getScreenshot()
+        arr = tex.getRamImageAs("RGB")
+        data = np.frombuffer(arr, np.uint8)
+        image = data.reshape(tex.getYSize(), tex.getXSize(), 3)
+        image = image[::-1, :, :]#   Image arrives with inverted Y axis
 
-            snapshot.image = image
+        snapshot.image = image
 
-            msg_mngr = SensingSnapshotManager()
-            data = msg_mngr.pack(snapshot)
+        msg_mngr = SensingSnapshotManager()
+        data = msg_mngr.pack(snapshot)
 
-            self.connected_client.settimeout(0.01)
-            try:
-                self.connected_client.sendall(data)
-            except socket.error as e:
-                print(f"Socket error: {e}")
+        self.connected_client.settimeout(0.01)
+        try:
+            self.connected_client.sendall(data)
+        except socket.error as e:
+            print(f"Socket error: {e}")
 
-            self.last_sensing = time.time()
+        self.last_sensing = time.time()
 
     def get_sensing_data(self):
         current_controls = (held_keys['w'] or held_keys["up arrow"],

@@ -101,7 +101,7 @@ if  __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     nn_brain = ExampleNNMsgProcessor()
-    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[130,0,-38], initial_angle=-360, initial_speed=10, record=True, record_image=False)
+    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[130,0,-38], initial_angle=-360, initial_speed=30, record=True, record_image=False)
     data_window.gate.set_gate([0, -15], [0, 15], 5)
 
     app.exec()
