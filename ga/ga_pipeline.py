@@ -12,8 +12,8 @@ import time
 
 # parameters
 PROTOCOL = "http"
-SERVER_IP = "127.0.0.1"
-PORT = 5000
+SERVER_IP = "192.168.88.248"
+PORT = 32324
 
 # global variables for parameters set on init
 gate_p1 = [0, 0]
@@ -33,10 +33,10 @@ def load_data(path):
     for i, file in enumerate(files):
         with lzma.open(file, "rb") as f:
             data = pickle.load(f)
-            
+
             # Collect all current_controls from the records in this file
             controls = [record.current_controls for record in data if hasattr(record, 'current_controls')]
-            
+
             # Store in the list as a tuple (individual_id, controls)
             individual_controls.append((f'individual_{i}', controls))
 
@@ -59,15 +59,28 @@ def add_fitness(individual_controls):
                 individual_id, controls = individual
             else:
                 print(f"Unexpected tuple length at index {idx}: {individual}")
-                continue  # Skip this entry
+                continue
         else:
             print(f"Unexpected entry at index {idx}: {individual}")
-            continue  # Skip non-tuple entries
+            continue
 
     # Evaluate the individual using the simulation
     def send_single_request(list_controls):
         global gate_p1, gate_p2, thickness, car_position, car_speed, car_angle
-        name, controlsRaw = list_controls
+        #print("hop la les controles: ")
+        #print(list_controls)
+
+        if isinstance(list_controls, tuple):
+            if len(individual) == 3:  # Already has fitness
+                name, controlsRaw, _ = individual
+            elif len(individual) == 2:  # Initial population
+                name, controlsRaw = individual
+            else:
+                print(f"Unexpected tuple length at index {idx}: {individual}")
+        else:
+            print(f"Unexpected entry at index {idx}: {individual}")
+
+
         status, time = send_simulation_request(
             protocol=PROTOCOL,
             server_ip=SERVER_IP,
@@ -80,13 +93,13 @@ def add_fitness(individual_controls):
             car_angle=car_angle,
             list_controls=controlsRaw,
         )
-
-        return [list_controls,status,time]  # Example response
+        fitness = time if status else 100
+        return (name,controlsRaw,fitness)
 
     # Function to execute parallel tasks
     def run_simulation_in_parallel(n, individual_controls):
         results = []
-        
+
         # Thread pool executor
         with ThreadPoolExecutor() as executor:
             # Submit tasks with thread ID
@@ -94,66 +107,85 @@ def add_fitness(individual_controls):
                 executor.submit(send_single_request, individual_controls[thread_id])
                 for thread_id in range(n)
             ]
-            
+
             # Collect results as they complete
             for future in as_completed(futures):
                 try:
                     results.append(future.result())
                 except Exception as e:
                     results.append(f"Error: {e}")
-        
-        # Assign fitness score
-        scored_population = []
-        for individual,status,time in results:
-            name, controlsRaw = individual
-            fitness = time if status else 100
-            scored_population.append((name, controlsRaw, fitness))
-            print(name, controlsRaw, fitness)
-            print("\n")
 
-        return scored_population
+        # Print results and return them
+        #print("resultats: ", results)
+        return results
 
     pop = len(individual_controls)
-    return run_simulation_in_parallel(pop,individual_controls)
+    while(True):
+        newPop = run_simulation_in_parallel(pop,individual_controls)
+        cnt = 0
+        for i in newPop:
+            name, controls, score = i
+            if score != 100:
+                cnt += 1
+            if cnt >= 2:
+                return newPop
+        print("generation with no one passing the finish line, there must have been a problem. let's do it again.")
 
+def nControls(ind):
+    a,w,s,d = 0,0,0,0
+    controls = individual_controls[0][1]
+
+    for i in controls:
+        na,nw,ns,nd = i
+        a += na
+        w += nw
+        s += ns
+        d += nd
+
+    return a,w,s,d
 
 def elitism(pop, elitism_count):
-
     elites = []
         # Select top elite_count individuals from the sorted population (from individual_with_scores)
     sorted_pop = sorted(pop, key=lambda x: x[2], reverse=False)
 
     for i in range(min(elitism_count, len(sorted_pop))):
         individual_id, controls, fitness = sorted_pop[i]
-        
+
         # Create the same structure as the child individuals (name, controls)
         elites.append((individual_id,controls,fitness))
-    print(elites)
-    print("\n")
+
+    for i in range(elitism_count):
+        print("la fine equipe: ")
+        print("   ", i, ": ")
+        print(elites[i][2])
+        print(nControls(elites[i]))
+        print(elites[i][1])
+    # print("elites: ", elites, "\n")
     return elites
 
 def crossover(parent1, parent2):
     """
     Perform crossover between two parents by randomly choosing control elements from each parent.
-    
+
     Parameters:
     - parent1: List of control tuples for the first parent.
     - parent2: List of control tuples for the second parent.
-    
+
     Returns:
     - child: New child created by selecting control elements from parent1 and parent2.
     """
     child = []
-    
+
     for c1, c2 in zip(parent1, parent2):
         # For each control element, randomly choose from parent1 or parent2
         chosen_parent = random.choice([c1, c2])
         child.append(chosen_parent)
-    
+
     return child
 
 def add_crossover_pop(pop, population_size=20, elite_count=4):
-    
+
     new_pop=[]
 
     # Create new individuals using crossover until the population size is met
@@ -161,7 +193,7 @@ def add_crossover_pop(pop, population_size=20, elite_count=4):
         # Select two random parents from sorted population, ensuring they are not the same
         parent1_data = random.choice(pop)
         parent2_data = random.choice(pop)
-        
+
         # Ensure parent1 and parent2 are not the same individual
         while parent1_data == parent2_data:
             parent2_data = random.choice(pop)
@@ -170,16 +202,13 @@ def add_crossover_pop(pop, population_size=20, elite_count=4):
         parent2_name, parent2_controls, parent2_fitness = parent2_data
         # Perform crossover between the parents
         child_controls = crossover(parent1_controls, parent2_controls)
-        
+
         # Create the child with a random fitness score (this could be calculated differently)
         #child_fitness_score = random.random()
-        
+
         # Store the child as a tuple (individual_name, controls, fitness_score)
         #new_pop.append(('child_' + str(len(new_pop) + 1), child_controls, child_fitness_score))
         new_pop.append(('child_' + str(len(new_pop) + 1), child_controls))
-
-
-
 
     return new_pop
 
@@ -187,17 +216,17 @@ def mutate(individual, mutation_rate):
     """
     Mutate the individual's controls based on the mutation_rate.
     This will mutate each control with a certain probability, setting each control value to 0 or 1.
-    
+
     Parameters:
     - individual: A tuple of (name, controls)
     - mutation_rate: Probability of mutation per control in each individual
-    
+
     Returns:
     - individual: The mutated individual with updated controls
     """
-    
+
     name, controls = individual  # Get the controls from the individual
-    
+
     newControls = []
 
     for i in range(len(controls)):
@@ -219,7 +248,7 @@ def smoothingTemplate(individual, mutation_rate, directions):
     """
     Template for the smoothing mutators. apply smoothing patterns through a convolution (size 3) on the controls. (for example, W at times 0 to 2 are [1,1,0], so the smoothing sets it to [1,1,1])
     The patterns can smooth towards 1 or 0, it's decided by the "control" input tab.
-    
+
     Parameters:
     - individual: A tuple of (name, controls)
     - mutation_rate: Probability of mutation per control in each individual
@@ -227,14 +256,14 @@ def smoothingTemplate(individual, mutation_rate, directions):
         -1 => no smoothing
         0  => smoothing toward 0
         1  => smoothing toward 1
-    
+
     Returns:
     - individual: The mutated individual with updated controls
 
     current smoothing patterns:
     a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
     """
-    
+
     name, controlsRaw = individual
     controls = list(map(list, zip(*controlsRaw)))  # transpose the controls to facilitate working with a window
 
@@ -249,11 +278,11 @@ def smoothingTemplate(individual, mutation_rate, directions):
                 commands = [controls[j][i],controls[j][i+1],controls[j][i+1]] # gets the window
                 for k in patterns:
                     # for each pattern
-                    if commands == k[0]: 
+                    if commands == k[0]:
                         if np.random.rand() < mutation_rate:
                             # if the window matches the pattern and the mutation happens (random number)
                             controls[j][i],controls[j][i+1],controls[j][i+2] = k[1]
-                            print("turned ", commands, " into ", k[1], " boss. (", j, ", ", i, ")")
+                            #print("turned ", commands, " into ", k[1], " boss. (", j, ", ", i, ")")
 
     reshapedControls = list(map(list, zip(*controls)))
     addingTuples = []
@@ -266,11 +295,11 @@ def mutateFaster(individual, mutation_rate):
     """
     Mutate the individual's controls based on the mutation_rate.
     This will compare successive values for an input and try and smooth it, here, only the W.
-    
+
     Parameters:
     - individual: A tuple of (name, controls)
     - mutation_rate: Probability of mutation per control in each individual
-    
+
     Returns:
     - individual: The mutated individual with updated controls
 
@@ -284,11 +313,11 @@ def mutateTurner(individual, mutation_rate):
     """
     Mutate the individual's controls based on the mutation_rate.
     This will compare successive values for an input and try and smooth it, here, only the W (towards 0) and A-D (towards 1).
-    
+
     Parameters:
     - individual: A tuple of (name, controls)
     - mutation_rate: Probability of mutation per control in each individual
-    
+
     Returns:
     - individual: The mutated individual with updated controls
 
@@ -301,11 +330,11 @@ def mutateRandomSmooth(individual, mutation_rate):
     """
     Mutate the individual's controls based on the mutation_rate.
     This will compare successive values for an input and try and smooth it, here, according to 4 random values.
-    
+
     Parameters:
     - individual: A tuple of (name, controls)
     - mutation_rate: Probability of mutation per control in each individual
-    
+
     Returns:
     - individual: The mutated individual with updated controls
 
@@ -319,12 +348,22 @@ def mutate_population(population, mutation_rate):
     """
     Mutates the individuals in the population based on mutation_rate.
     """
+
     mutated_population = []
-    
+
     for individual in population:
-        mutated_individual = mutateFaster(individual, mutation_rate)
+        method = random.randrange(0, 3)
+        match method:
+            case 0:
+                mutated_individual = mutate(individual, mutation_rate)
+            case 1:
+                mutated_individual = mutateFaster(individual, mutation_rate)
+            case 2:
+                mutated_individual = mutateTurner(individual, mutation_rate)
+            case 3:
+                mutated_individual = mutateRandomSmooth(individual, mutation_rate)
         mutated_population.append(mutated_individual)
-    
+
     return mutated_population
 
 def preprocess_population(population):
@@ -352,17 +391,20 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         # Step 3: Mutate the crossed population
         mutated_pop = mutate_population(crossed_pop, mutation_rate)
         print(f"mutated_pop {gen + 1}")
+        popi = preprocess_population(mutated_pop)
         # Step 4: Add the elite individuals to the mutated population
-        next_generation = elite + mutated_pop  # Elite individuals directly pass to the next generation
+        next_generation = elite + popi  # Elite individuals directly pass to the next generation
         individual_controls = next_generation # apply the new generation
         print(f"create final generation {gen + 1}")
         # Step 5: Print the current population after mutation
-        print("Mutated Population:")
+        '''print("Mutated Population:")
         for individual in next_generation:
-            print(f"Individual: {individual[0]}, Controls: {individual[1]}")
+            name, controls = individual
+            print(f"Individual: {name}, Controls: {controls}")
             print("\n")
-        
-
+        '''
+        #print("\n")
+        #print(individual_controls)
         print(f"ready for gen {gen + 2}")
 
     return next_generation
@@ -380,7 +422,7 @@ def genAl(generation, initial_controls, section):
     car_speed = 50
     car_angle = -90
     '''
-    return genetic_algorithm(generation=generation, mutation_rate=0.2, population_size=10, elitism_count=2, individual_controls=initial_controls)
+    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=6, elitism_count=2, individual_controls=initial_controls)
 
 
 #individual_con = load_data("data_trajectory_test/*.npz")
@@ -1010,6 +1052,6 @@ individual_controls = [('individual_0',
         (0, 0, 0, 0),
         (0, 0, 0, 0)]),
     ]"""
-    
+
 paramTab =   [[-140,-21], [-165,-24], 5, [10,0,1], 50, -90]
-yay = genAl(10,individual_controls,paramTab)
+yay = genAl(5,individual_controls,paramTab)
