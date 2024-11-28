@@ -11,6 +11,7 @@ class CustomDataset(Dataset):
     def __init__(self, folder_path, transform=None):
         self.inputs_image = []
         self.inputs_color = []
+        self.inputs_speed = []
         self.targets = []
         self.transform = transform
         self.number_of_samples = 0
@@ -30,6 +31,7 @@ class CustomDataset(Dataset):
                                 image = Image.fromarray(x.image)
                                 if self.transform:
                                     image = self.transform(image)
+                                self.inputs_speed.append(x.car_speed)
                                 self.inputs_image.append(image)
                                 self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append(list(x.current_controls))
@@ -38,6 +40,7 @@ class CustomDataset(Dataset):
                                 flipped_image = Image.fromarray(np.fliplr(x.image))
                                 if self.transform:
                                     flipped_image = self.transform(flipped_image)
+                                self.inputs_speed.append(x.car_speed)
                                 self.inputs_image.append(flipped_image)
                                 self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append([x.current_controls[0], x.current_controls[1], x.current_controls[3], x.current_controls[2]])
@@ -50,7 +53,7 @@ class CustomDataset(Dataset):
         return len(self.inputs_image)
 
     def __getitem__(self, idx):
-        return self.inputs_image[idx], torch.tensor(self.inputs_color[idx], dtype=torch.float32), torch.tensor(self.targets[idx], dtype=torch.float32)
+        return self.inputs_image[idx], torch.tensor(self.inputs_color[idx], dtype=torch.float32), torch.tensor(self.inputs_speed[idx], dtype=torch.float32), torch.tensor(self.targets[idx], dtype=torch.float32)
     
 
 # used to load data for test

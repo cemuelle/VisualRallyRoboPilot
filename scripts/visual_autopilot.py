@@ -24,7 +24,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 print("Loading model...")
-model_path = "./model_20241115_093913_8.pth"
+model_path = "./model_20241128_132459_18.pth"
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)
@@ -45,10 +45,12 @@ class VisualNNMsgProcessor:
 
         image = preprocess(image)
 
+        speed = message.car_speed
         with torch.no_grad():
             image = image.unsqueeze(0)
             color = torch.tensor(color).float().unsqueeze(0)
-            output = model(image, color)
+            speed = torch.tensor(speed).float().unsqueeze(0)
+            output = model(image, color, speed)
         print("Models output: ", output)
 
         output_list = output.tolist()[0]

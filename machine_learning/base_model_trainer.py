@@ -2,15 +2,12 @@ import torch
 from utils import *
 import torch.nn as nn
 from datetime import datetime
-# from torch.utils.tensorboard import SummaryWriter
 from models import AlexNetPerso
 from preprocessing import preprocess
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from torch.utils.data import DataLoader, random_split
 
 def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    # writer = SummaryWriter('runs/pilot_trainer_{}'.format(timestamp))
-    writer = None
     epoch_number = 0
 
     best_loss = float('inf')
@@ -18,7 +15,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
         model.train()
-        avg_loss = train_one_epoch(epoch, training_dataloader, writer)
+        avg_loss = train_one_epoch(training_dataloader)
 
         running_loss = 0.0
 
@@ -26,10 +23,12 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         with torch.no_grad():
             for i, data in enumerate(validation_dataloader):
-                inputs_image, inputs_color, labels = data
-                vinputs_image, vinputs_color, vlabels = inputs_image.to(device), inputs_color.to(device), labels.to(device)
+                inputs_image, inputs_color, inputs_speed, labels = data
+                vinputs_image, vinputs_color, vinputs_speed, vlabels = inputs_image.to(device), inputs_color.to(device), inputs_speed.to(device), labels.to(device)
+                vinputs_speed = vinputs_speed.unsqueeze(1)
 
-                voutputs = model(vinputs_image, vinputs_color)
+                voutputs = model(vinputs_image, vinputs_color, vinputs_speed)
+        
                 vloss = criterion(voutputs, vlabels)
 
                 running_loss += vloss.item()
@@ -38,12 +37,6 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
 
-        if writer is not None:
-            writer.add_scalars('Training vs. Validation Loss',
-                    { 'Training' : avg_loss, 'Validation' : avg_vloss },
-                    epoch)
-            writer.flush()
-
         if avg_vloss < best_loss:
             best_loss = avg_vloss
             model_path = 'model_{}_{}.pth'.format(timestamp, epoch)
@@ -51,17 +44,18 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
             torch.save(model.state_dict(), model_path)
         
 
-def train_one_epoch(epoch_index, training_dataloader, tb_writer=None):
+def train_one_epoch(training_dataloader):
     running_loss = 0.0
     last_loss = 0.0
 
-    for i, data in enumerate(training_dataloader, 0):
-        inputs_image, inputs_color, labels = data
-        vinputs_image, vinputs_color, vlabels = inputs_image.to(device), inputs_color.to(device), labels.to(device)
+    for i, data in enumerate(training_dataloader):
+        inputs_image, inputs_color, inputs_speed, labels = data
+        vinputs_image, vinputs_color, vinputs_speed, vlabels = inputs_image.to(device), inputs_color.to(device), inputs_speed.to(device), labels.to(device)
+        vinputs_speed = vinputs_speed.unsqueeze(1)
 
         optimizer.zero_grad()
 
-        outputs = model(vinputs_image, vinputs_color)
+        outputs = model(vinputs_image, vinputs_color, vinputs_speed)
         loss = criterion(outputs, vlabels)
         loss.backward()
 
@@ -73,10 +67,7 @@ def train_one_epoch(epoch_index, training_dataloader, tb_writer=None):
             last_loss = running_loss / 100
             running_loss = 0.0
             print(f" Batch {i + 1}, Loss: {last_loss}")
-            if tb_writer is not None:
-                tb_x = epoch_index * len(training_dataloader) + i
-                tb_writer.add_scalar("Loss/train", last_loss, tb_x)
-            
+
     return last_loss
 
 if __name__ == "__main__":
@@ -94,8 +85,8 @@ if __name__ == "__main__":
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
 
-    training_dataloader = DataLoader(training_dataset, batch_size=32, shuffle=True)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
+    training_dataloader = DataLoader(training_dataset, batch_size=16, shuffle=True)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=2, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters())
 
