@@ -1,9 +1,7 @@
 
 from ursina import *
 import socket
-import select
 import numpy as np
-import json
 from ga.gate import Gate
 import time
 
@@ -330,3 +328,4 @@ class RemoteController(Entity):
             self.connected_client.close()
             self.connected_client = None
         self.open_connection_socket()
+        self.waitCommand = False

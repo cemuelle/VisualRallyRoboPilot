@@ -1,9 +1,8 @@
-
-
 from PyQt6 import QtWidgets
 
 from data_collector import DataCollectionUI
 from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
+
 """
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -38,7 +37,7 @@ class ExampleNNMsgProcessor:
         self.always_forward = True
         self.model = MLP()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.load_state_dict(torch.load("models/MLP_model.pth"))
+        self.model.load_state_dict(torch.load("models/MLP_model.pth", weights_only=True))
         self.model.to(self.device)
         self.model.eval()
 
