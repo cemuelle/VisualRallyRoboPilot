@@ -152,9 +152,12 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
         if response.status_code == 200:
             response_data = response.json()
             status = response_data.get("status", False)
-            time = response_data.get("time", float("inf"))
-            print("Simulation started successfully:", response.json())
+            time = response_data.get("time", float("inf")) * 100  # Multiply time by 100
+            response_data["time"] = time  # Update the time in response_data
+            print("Simulation started successfully:", response_data, "\n")
+
             return status, time
+
         else:
             print(f"Error: {response.status_code}, Response: {response.text}")
             return False, float("inf")

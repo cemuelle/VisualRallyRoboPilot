@@ -1,6 +1,7 @@
 from ursina import *
 from ursina import curve
 
+delta = 0.05
 class Particles(Entity):
     def __init__(self, car, position):
         super().__init__(
@@ -19,11 +20,17 @@ class Particles(Entity):
 
 
     def update(self):
-        self.position += self.direction * 5 * time.dt
+        #self.position += self.direction * 5 * time.dt
+        self.position += self.direction * 5 * delta
+
         if hasattr(self.car, "graphics"):
             if self.car.graphics != "fancy":
-                self.scale_x += 0.1 * time.dt
-                self.scale_y += 0.1 * time.dt
+                #self.scale_x += 0.1 * time.dt
+                self.scale_x += 0.1 * delta
+
+                #self.scale_y += 0.1 * time.dt
+                self.scale_y += 0.1 * delta
+
 
     def destroy(self, delay = 1):
         self.fade_out(duration = 0.2, delay = 0.7, curve = curve.linear)
@@ -42,7 +49,9 @@ class TrailRenderer(Entity):
 
     def update(self):
         if self.trailing:
-            self._t += time.dt
+            #self._t += time.dt
+            self._t += delta
+
             if self._t >= self.update_step:
                 self._t = 0
                 self.renderer.model.vertices.pop(0)
