@@ -13,7 +13,7 @@ class DataCollectionUI(QtWidgets.QMainWindow):
     def __init__(self, message_processing_callback = None):
         super().__init__()
 
-        uic.loadUi("DataCollector.ui", self)
+        uic.loadUi("scripts/DataCollector.ui", self)
 
         buttons = [self.forwardButton, self.backwardButton, self.rightButton, self.leftButton]
         self.command_directions = { "w":"forward", "s":"back", "d":"right", "a":"left" }

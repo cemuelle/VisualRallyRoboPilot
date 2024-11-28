@@ -111,9 +111,10 @@ def old_main():
     print("Result:", result)
 
 
-def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, timeout=30):
+def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, deltaT=0.1, timeout=30):
     """
-    Send a simulation request to the server.
+    Send a simulation request to the server and calculate the number of deltaT intervals 
+    required for the car to arrive at the gate.
 
     Args:
         protocol (str): The protocol to use (e.g., "http" or "https").
@@ -126,12 +127,13 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
         car_speed (float): The speed of the car.
         car_angle (float): The angle of the car.
         list_controls (list of list of float): The list of control commands, each command is a list of four floats.
+        deltaT (float, optional): The time step for each control command in seconds. Defaults to 0.1.
         timeout (int, optional): The timeout for the POST request in seconds. Defaults to 30.
 
     Returns:
         tuple: A tuple containing:
             - status (bool): The status of the simulation (True if successful, False otherwise).
-            - time (float): The time taken for the simulation or float('inf') if there was an error.
+            - steps (int): The number of deltaT intervals to reach the gate or -1 if an error occurred.
     """
 
     url = f"{protocol}://{server_ip}:{port}/simulate"
@@ -144,7 +146,8 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
         "car_position": car_position,
         "car_speed": car_speed,
         "car_angle": car_angle,
-        "list_controls": list_controls
+        "list_controls": list_controls,
+        "deltaT": deltaT
     }
 
     try:
@@ -152,37 +155,86 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
         if response.status_code == 200:
             response_data = response.json()
             status = response_data.get("status", False)
-            time = response_data.get("time", float("inf"))
-            print("Simulation started successfully:", response.json())
-            return status, time
+            steps = response_data.get("steps", -1)  # Expecting the server to return "steps"
+            return status, steps
         else:
             print(f"Error: {response.status_code}, Response: {response.text}")
-            return False, float("inf")
+            return False, -1
     except requests.RequestException as e:
         print(f"Request failed: {e}")
-    
-if __name__ == "__main__":
-    car_position = [10, 0, 1, 50, -90]  # [x, y, z, speed, rotation]
-    gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
-    list_controls = [
-        [1, 0, 0, 0],
-        [1, 0, 0, 0],  
-        [0, 0, 1, 0],
-        [0, 1, 1, 0],  
-        [1, 0, 0, 0],
-        [1, 0, 0, 1], 
-        [0, 0, 0, 1],
-        [1, 0, 0, 1], 
-        [0, 1, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-        [0, 0, 0, 0], 
-    ]
+        return False, -1
 
-    status, time = send_simulation_request("http", "127.0.0.1", 5000, gate_position[0], gate_position[1], gate_position[2], [car_position[0], car_position[1], car_position[2]], car_position[3], car_position[4], list_controls)
+if __name__ == "__main__":
+    car_position = [0, 0, 1]  # [x, y, z]
+    car_speed = 50  # Speed in some units
+    car_angle = -90  # Angle in degrees
+    gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
+    list_controls = [(1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (0, 0, 1, 0),
+        (1, 0, 1, 0),
+        (1, 0, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0)]
+
+    deltaT = 0.1
+    status, steps = send_simulation_request(
+        "http", 
+        "127.0.0.1", 
+        5000, 
+        gate_position[0], 
+        gate_position[1], 
+        gate_position[2], 
+        car_position, 
+        car_speed, 
+        car_angle, 
+        list_controls, 
+        deltaT
+    )
 
     print("Simulation Status:", status)
-    print("Simulation Time:", time)
+    print("Number of deltaT steps to arrive at gate:", steps)

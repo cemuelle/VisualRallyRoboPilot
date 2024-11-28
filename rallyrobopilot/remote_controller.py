@@ -39,8 +39,7 @@ class RemoteController(Entity):
         self.list_controls = []
         self.start_simulate_controls = False
         self.pass_gate = False
-        self.start_time = 0
-        self.last_control = 0
+        self.step = 0
         self.gate = Gate()
 
         #   Period for recording --> 0.1 secods = 10 times a second
@@ -111,21 +110,21 @@ class RemoteController(Entity):
 
                 self.gate.set_gate(command_data['gate_p1'], command_data['gate_p2'], command_data['thickness'])
                 # define car position, speed and rotation and then reset the car
+                self.step = 0
                 self.car.reset_position = command_data['car_position']
                 self.car.reset_speed = command_data['car_speed']
                 self.car.reset_orientation = (0, command_data['car_angle'], 0)
                 self.car.reset_car()
 
                 self.list_controls = command_data['list_controls']
-                self.start_time = time.time()
 
                 while self.start_simulate_controls:
                     time.sleep(0.1)
 
                 if self.pass_gate:
-                    return jsonify({"status": True, "time": self.last_control - self.start_time, "collisions": self.car.collisions}), 200
+                    return jsonify({"status": True, "steps": self.step, "collisions": self.car.collisions}), 200
                 else:
-                    return jsonify({"status": False, "time": float('inf'), "collisions": self.car.collisions}), 200
+                    return jsonify({"status": False, "steps": float('inf'), "collisions": self.car.collisions}), 200
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
     
@@ -135,14 +134,13 @@ class RemoteController(Entity):
 
     def update(self):
         
-        if time.time() - self.last_time > self.sensing_period:
-            if not self.start_simulate_controls:
-                self.update_network()
-                self.process_remote_commands()
-            else :
-                self.process_simulate_controls()
-            self.process_sensing()
-            self.last_time = time.time()
+        if not self.start_simulate_controls:
+            self.update_network()
+            self.process_remote_commands()
+        else :
+            self.process_simulate_controls()
+        self.process_sensing()
+            
 
     def process_simulate_controls(self):
         if self.car is None:
@@ -150,20 +148,18 @@ class RemoteController(Entity):
         
         car_position = self.car.world_position
         if self.gate.is_car_through((car_position[0], car_position[2])):
-            self.last_control = time.time()
             self.pass_gate = True
             self.start_simulate_controls = False
             return
         len_controls = len(self.list_controls)
         if len_controls > 0:
             controls = self.list_controls.pop(0)
+            self.step += 1
 
             held_keys['w'] = controls[0] == 1
             held_keys['s'] = controls[1] == 1
             held_keys['a'] = controls[2] == 1
             held_keys['d'] = controls[3] == 1
-
-            self.last_control = time.time()
         else:
             self.start_simulate_controls = False
 
@@ -181,7 +177,6 @@ class RemoteController(Entity):
         snapshot.car_speed = self.car.speed
         snapshot.car_angle = self.car.rotation_y
         snapshot.raycast_distances = self.car.multiray_sensor.collect_sensor_values()
-        snapshot.number_of_collisions = self.car.collisions
 
         #   Collect last rendered image
         tex = base.win.getDisplayRegion(0).getScreenshot()
@@ -269,8 +264,9 @@ class RemoteController(Entity):
                         self.car.reset_position = commands[2]
                     elif commands[1] == b'rotation':
                         self.car.reset_orientation = (0, commands[2], 0)
-                    elif commands[1] == b'speed':
+                    elif commands[1] == b'speed':        
                         self.car.reset_speed = float(commands[2])
+
                     elif commands[1] == b'ray':
                         self.car.multiray_sensor.set_enabled_rays(commands[2] == b'visible')
 
