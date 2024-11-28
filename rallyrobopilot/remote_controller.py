@@ -16,6 +16,8 @@ from .remote_commands import RemoteCommandParser
 
 REMOTE_CONTROLLER_VERBOSE = False
 PERIOD_REMOTE_SENSING = 0.1
+is_ready = True
+
 
 def printv(str):
     if REMOTE_CONTROLLER_VERBOSE:
@@ -44,6 +46,20 @@ class RemoteController(Entity):
         #   Period for recording --> 0.1 secods = 10 times a second
         self.sensing_period = PERIOD_REMOTE_SENSING
         self.last_sensing = -1
+        
+
+        @flask_app.route('/healthz', methods=['GET'])
+        def healthz():
+            """
+            Endpoint utilisé par Kubernetes pour vérifier si le pod est prêt.
+            Retourne 200 si le pod est prêt, 503 sinon.
+            """
+            global is_ready
+            if is_ready:
+                return "OK", 200
+            else:
+                return "Service Unavailable", 503
+
 
         # Setup http route for updating.
         @flask_app.route('/command', methods=['POST'])
@@ -61,9 +77,13 @@ class RemoteController(Entity):
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
             
+            
         @flask_app.route('/simulate', methods=['POST'])
         def simulate_route():
+            global is_ready
+            is_ready = False
             if self.car is None:
+                is_ready = True
                 return jsonify({"error": "No car connected"}), 400
 
             command_data = request.json
@@ -82,24 +102,30 @@ class RemoteController(Entity):
             # Check if all required fields are present and have the correct type
             for field, expected_type in required_fields.items():
                 if field not in command_data:
+                    is_ready = True
                     return jsonify({"error": f"Missing required field: {field}"}), 400
                 if not isinstance(command_data[field], expected_type):
+                    is_ready = True
                     return jsonify({"error": f"Invalid type for field: {field}. Expected {expected_type}"}), 400
                 
             # Additional checks for specific fields
             if len(command_data['gate_p1']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p1']):
+                is_ready = True
                 return jsonify({"error": "Invalid format for gate_p1. Expected a list of two numbers."}), 400
 
             if len(command_data['gate_p2']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p2']):
+                is_ready = True
                 return jsonify({"error": "Invalid format for gate_p2. Expected a list of two numbers."}), 400
 
             if len(command_data['car_position']) != 3 or not all(isinstance(x, (int, float)) for x in command_data['car_position']):
+                is_ready = True
                 return jsonify({"error": "Invalid format for car_position. Expected a list of three numbers."}), 400
 
             if not isinstance(command_data['list_controls'], list) or len(command_data['list_controls']) == 0 or not all(
                     isinstance(control, list) and len(control) == 4 and all(isinstance(x, (int, float)) for x in control)
                     for control in command_data['list_controls']
             ):
+                is_ready = True
                 return jsonify({"error": "Invalid format for list_controls. Expected a non-empty list of lists, each containing four numbers."}), 400
         
 
@@ -121,10 +147,13 @@ class RemoteController(Entity):
                     time.sleep(0.1)
 
                 if self.pass_gate:
+                    is_ready = True
                     return jsonify({"status": True, "time": self.last_control - self.start_time}), 200
                 else:
+                    is_ready = True
                     return jsonify({"status": False, "time": float('inf')}), 200
             except Exception as e:
+                is_ready = True
                 return jsonify({"error": str(e)}), 500
     
         @flask_app.route('/sensing')
