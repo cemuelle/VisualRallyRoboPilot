@@ -68,6 +68,10 @@ class RemoteController(Entity):
         @flask_app.route('/simulate', methods=['POST'])
         def simulate_route():
             global is_ready
+
+            if not is_ready:
+                return jsonify({"error": "Pod in use"}), 503
+
             is_ready = False
             if self.car is None:
                 is_ready = True
