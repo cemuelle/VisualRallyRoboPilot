@@ -46,19 +46,6 @@ class RemoteController(Entity):
         #   Period for recording --> 0.1 secods = 10 times a second
         self.sensing_period = PERIOD_REMOTE_SENSING
         self.last_sensing = -1
-        
-
-        @flask_app.route('/healthz', methods=['GET'])
-        def healthz():
-            """
-            Endpoint utilisé par Kubernetes pour vérifier si le pod est prêt.
-            Retourne 200 si le pod est prêt, 503 sinon.
-            """
-            global is_ready
-            if is_ready:
-                return "OK", 200
-            else:
-                return "Service Unavailable", 503
 
 
         # Setup http route for updating.
@@ -77,7 +64,7 @@ class RemoteController(Entity):
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
             
-            
+
         @flask_app.route('/simulate', methods=['POST'])
         def simulate_route():
             global is_ready
@@ -159,6 +146,18 @@ class RemoteController(Entity):
         @flask_app.route('/sensing')
         def get_sensing_route():
             return jsonify(self.get_sensing_data()), 200
+
+        @flask_app.route('/healthz', methods=['GET'])
+        def healthz():
+            """
+            Endpoint utilisé par Kubernetes pour vérifier si le pod est prêt.
+            Retourne 200 si le pod est prêt, 503 sinon.
+            """
+            global is_ready
+            if is_ready:
+                return "OK", 200
+            else:
+                return "Service Unavailable", 503
 
     def update(self):
         if not self.start_simulate_controls:
