@@ -163,6 +163,10 @@ class RemoteController(Entity):
         if self.gate.is_car_through((car_position[0], car_position[2])):
             self.pass_gate = True
             self.start_simulate_controls = False
+            held_keys['w'] = False
+            held_keys['s'] = False
+            held_keys['a'] = False
+            held_keys['d'] = False
             return
         len_controls = len(self.list_controls)
         if len_controls > 0:
@@ -174,6 +178,10 @@ class RemoteController(Entity):
             held_keys['a'] = controls[2] == 1
             held_keys['d'] = controls[3] == 1
         else:
+            held_keys['w'] = False
+            held_keys['s'] = False
+            held_keys['a'] = False
+            held_keys['d'] = False
             self.start_simulate_controls = False
 
 
