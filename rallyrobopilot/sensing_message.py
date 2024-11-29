@@ -18,12 +18,14 @@ class SensingSnapshot:
         self.car_speed = 0
         self.car_angle = 0
         self.raycast_distances = [0]
+        self.collisions = 0
         self.image = None
 
     def pack(self):
         byte_data = b''
         byte_data += struct.pack(">BBBB", *self.current_controls)
         byte_data += struct.pack(">fffff", self.car_position[0], self.car_position[1], self.car_position[2], self.car_angle, self.car_speed)
+        byte_data += struct.pack(">B", self.collisions)
 
         nbr_raycasts = len(self.raycast_distances)
         byte_data += struct.pack(">B" + "f" * nbr_raycasts, nbr_raycasts, *self.raycast_distances)
@@ -42,6 +44,8 @@ class SensingSnapshot:
         self.car_position = (x,y,z)
         self.car_angle = a
         self.car_speed = s
+        data = iter_unpack(">B", data)
+        self.collisions, data = data
 
         (nbr_raycasts,), data = iter_unpack(">B", data)
         self.raycast_distances, data = iter_unpack(">" + "f" * nbr_raycasts, data)
@@ -93,13 +97,10 @@ class NetworkDataCmdInterface:
         self.data = []
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.socket.setsockopt(socket.IPPROTO_TCP, socket.SO_RCVBUF, 125536)
-        except OSError as e:
-            print(f"Error setting socket option: {e}")
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 125536)
         self.socket.connect((address, port))
         # self.socket.setblocking(False)
-        self.socket.settimeout(0.05)
+        self.socket.settimeout(0.1)
 
         self.msg_mngr = SensingSnapshotManager(callback)
 
@@ -124,4 +125,10 @@ class NetworkDataCmdInterface:
         print("sensing_snapshot.car.position =", sensing_snapshot.car_position)
 
         imageio.imsave("last_image.png", sensing_snapshot.image)
+
+    def disconnect(self):
+        try:
+            self.socket.close()
+        except Exception as e:
+            print(f"Error while closing the socket: {e}")
 

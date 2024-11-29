@@ -8,12 +8,12 @@ import random
 import numpy as np
 from control_car import send_simulation_request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time as titi
 import matplotlib.pyplot as plt
+
 # parameters
 PROTOCOL = "http"
-SERVER_IP = "192.168.88.248"
-PORT = 32324
+SERVER_IP = "127.0.0.1"
+PORT = 5000
 
 # global variables for parameters set on init
 gate_p1 = [-140, -21]
