@@ -77,8 +77,6 @@ class ExampleNNMsgProcessor:
             # data_collector.saveRecord(close_after_save=True)
             data_collector.network_interface.disconnect()
 
-            # Delete the first 3 records, because they are not useful
-            del data_collector.recorded_data[:3]
             for snapshot in data_collector.recorded_data:
                 print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
 
