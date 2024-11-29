@@ -131,7 +131,6 @@ class RemoteController(Entity):
             return jsonify(self.get_sensing_data()), 200
 
     def update(self):
-        
         if not self.start_simulate_controls:
             self.update_network()
             self.process_remote_commands()

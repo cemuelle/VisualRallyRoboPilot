@@ -73,23 +73,21 @@ class ExampleNNMsgProcessor:
 
         car_position = message.car_position
 
-        if not data_collector.gate.is_car_through((car_position[0], car_position[2])):
-            commands = self.nn_infer(message)
-
-            for command, start in commands:
-                data_collector.onCarControlled(command, start)
-        else:
+        if data_collector.gate.is_car_through((car_position[0], car_position[2])) and len(data_collector.recorded_data) > 2:
             # data_collector.saveRecord(close_after_save=True)
-            data_collector.onCarControlled("forward", False)
-            data_collector.onCarControlled("back", False)
-            data_collector.onCarControlled("right", False)
-            data_collector.onCarControlled("left", False)
             data_collector.network_interface.disconnect()
 
+            # Delete the first 3 records, because they are not useful
+            del data_collector.recorded_data[:3]
             for snapshot in data_collector.recorded_data:
                 print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
 
             QtWidgets.QApplication.quit()
+        else:
+            commands = self.nn_infer(message)
+
+            for command, start in commands:
+                data_collector.onCarControlled(command, start)
 
 if  __name__ == "__main__":
     import sys
@@ -102,5 +100,4 @@ if  __name__ == "__main__":
     nn_brain = ExampleNNMsgProcessor()
     data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[130,0,-38], initial_angle=-360, initial_speed=30, record=True, record_image=False)
     data_window.gate.set_gate([0, -15], [0, 15], 5)
-
     app.exec()

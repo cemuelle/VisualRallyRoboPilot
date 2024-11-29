@@ -20,6 +20,8 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
 
         self.network_interface = NetworkDataCmdInterface(self.collectMsg)
 
+        self.setInitialPosition(initial_position, initial_angle, initial_speed)
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.network_interface.recv_msg)
         self.timer.start(25)
@@ -30,8 +32,6 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
         self.record_image = record_image
 
         self.gate = Gate()
-
-        self.setInitialPosition(initial_position, initial_angle, initial_speed)
 
         self.recorded_data = []
     def collectMsg(self, msg):
