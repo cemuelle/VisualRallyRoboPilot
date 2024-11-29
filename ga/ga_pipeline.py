@@ -8,20 +8,20 @@ import random
 import numpy as np
 from control_car import send_simulation_request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
-
+import time as titi
+import matplotlib.pyplot as plt
 # parameters
 PROTOCOL = "http"
 SERVER_IP = "192.168.88.248"
 PORT = 32324
 
 # global variables for parameters set on init
-gate_p1 = [0, 0]
-gate_p2 = [0, 0]
-thickness = 0
-car_position = [0,0,0]  # x, y, z
-car_speed = 0
-car_angle = 0
+gate_p1 = [-140, -21]
+gate_p2 = [-165, -24]
+thickness = 5
+car_position = [-100, 0, -50]  # x, y, z
+car_speed = 50
+car_angle = -90
 
 
 def load_data(path):
@@ -71,28 +71,32 @@ def add_fitness(individual_controls):
         #print(list_controls)
 
         if isinstance(list_controls, tuple):
-            if len(individual) == 3:  # Already has fitness
-                name, controlsRaw, _ = individual
-            elif len(individual) == 2:  # Initial population
-                name, controlsRaw = individual
+            if len(list_controls) == 3:  # Already has fitness
+                name, controlsRaw, _ = list_controls
+            elif len(list_controls) == 2:  # Initial population
+                name, controlsRaw = list_controls
             else:
                 print(f"Unexpected tuple length at index {idx}: {individual}")
         else:
             print(f"Unexpected entry at index {idx}: {individual}")
 
+        cond = True
+        while(cond):
+            reussied, status, time = send_simulation_request(
+                protocol=PROTOCOL,
+                server_ip=SERVER_IP,
+                port=PORT,
+                gate_p1=gate_p1,
+                gate_p2=gate_p2,
+                thickness=thickness,
+                car_position=car_position,
+                car_speed=car_speed,
+                car_angle=car_angle,
+                list_controls=controlsRaw,
+            )
+            cond = not reussied
 
-        status, time = send_simulation_request(
-            protocol=PROTOCOL,
-            server_ip=SERVER_IP,
-            port=PORT,
-            gate_p1=gate_p1,
-            gate_p2=gate_p2,
-            thickness=thickness,
-            car_position=car_position,
-            car_speed=car_speed,
-            car_angle=car_angle,
-            list_controls=controlsRaw,
-        )
+
         fitness = time if status else 100
         return (name,controlsRaw,fitness)
 
@@ -113,16 +117,20 @@ def add_fitness(individual_controls):
                 try:
                     results.append(future.result())
                 except Exception as e:
-                    results.append(f"Error: {e}")
+                    results.append(e)
 
         # Print results and return them
-        #print("resultats: ", results)
+        print("resultats: ")
+        for i in results:
+            name, controls, _ = i
+            print(name, nControls(i))
         return results
 
     pop = len(individual_controls)
     while(True):
         newPop = run_simulation_in_parallel(pop,individual_controls)
         cnt = 0
+        #print(newPop)
         for i in newPop:
             name, controls, score = i
             if score != 100:
@@ -375,13 +383,36 @@ def preprocess_population(population):
             processed.append(individual)
     return processed
 
+def graph_speed_over_generations(generation_data):
+    """
+    Plots the average speed across generations.
+
+    :param generation_data: List of tuples, where each tuple contains generation number and average speed.
+    """
+    generations = [data[0] for data in generation_data]
+    avg_speeds = [data[1] for data in generation_data]
+
+    # Plot the graph
+    plt.figure(figsize=(10, 6))
+    plt.plot(generations, avg_speeds, marker='o', linestyle='-', color='b', label='Average Speed')
+    plt.title('Average Speed Across Generations')
+    plt.xlabel('Generation Number')
+    plt.ylabel('Average Speed')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
 
 def genetic_algorithm(generation, mutation_rate, population_size, elitism_count, individual_controls):
+    generation_data = []  # Store generation number and average speed
     # Start the evolution process for the specified number of generations
     for gen in range(generation):
         print(f"\nGeneration {gen + 1}:")
         individual_with_scores = add_fitness(individual_controls)
         print(f"Fitness done {gen + 1}")
+        # Step 0: Graphs Speed avg
+        speeds = [individual[2] for individual in individual_with_scores]
+        avg_speed = sum(speeds) / len(speeds) if speeds else 0
+        generation_data.append((gen + 1, avg_speed))
         # Step 1: Select Elite individuals
         elite = elitism(individual_with_scores, elitism_count)
         print(f"Elitism done {gen + 1}")
@@ -406,9 +437,10 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         #print("\n")
         #print(individual_controls)
         print(f"ready for gen {gen + 2}")
+    # Plot average speed across generations
+    #graph_speed_over_generations(generation_data)    
 
     return next_generation
-
 
 
 def genAl(generation, initial_controls, section):
@@ -422,7 +454,7 @@ def genAl(generation, initial_controls, section):
     car_speed = 50
     car_angle = -90
     '''
-    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=6, elitism_count=2, individual_controls=initial_controls)
+    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=10, elitism_count=1, individual_controls=initial_controls)
 
 
 #individual_con = load_data("data_trajectory_test/*.npz")
@@ -947,6 +979,8 @@ individual_controls = [('individual_0',
         (0, 0, 0, 0),
         (0, 0, 0, 0)]),
     ]
+genetic_algorithm(generation=1, mutation_rate=0.2, population_size=10, elitism_count=1, individual_controls=individual_controls)
+
 """individual_controls = [('individual_0',
         [(1, 0, 0, 0),
         (1, 0, 0, 0),
@@ -1053,5 +1087,5 @@ individual_controls = [('individual_0',
         (0, 0, 0, 0)]),
     ]"""
 
-paramTab =   [[-140,-21], [-165,-24], 5, [10,0,1], 50, -90]
+paramTab =   [[-140,-21], [-165,-24], 5, [-100,0,-50], 50, -90]
 yay = genAl(5,individual_controls,paramTab)

@@ -154,10 +154,10 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
             status = response_data.get("status", False)
             time = response_data.get("time", float("inf"))
             print("Simulation started successfully:", response.json())
-            return status, time
+            return True, status, time
         else:
             print(f"Error: {response.status_code}, Response: {response.text}")
-            return False, float("inf")
+            return False, False, float("inf")
     except requests.RequestException as e:
         print(f"Request failed: {e}")
     
