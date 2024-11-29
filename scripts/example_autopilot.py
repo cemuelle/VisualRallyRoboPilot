@@ -3,6 +3,8 @@ from PyQt6 import QtWidgets
 from data_collector import DataCollectionUI
 from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
 
+import sys
+
 """
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -76,10 +78,6 @@ class ExampleNNMsgProcessor:
         if data_collector.gate.is_car_through((car_position[0], car_position[2])) and len(data_collector.recorded_data) > 2:
             # data_collector.saveRecord(close_after_save=True)
             data_collector.network_interface.disconnect()
-
-            for snapshot in data_collector.recorded_data:
-                print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
-
             QtWidgets.QApplication.quit()
         else:
             commands = self.nn_infer(message)
@@ -87,8 +85,7 @@ class ExampleNNMsgProcessor:
             for command, start in commands:
                 data_collector.onCarControlled(command, start)
 
-if  __name__ == "__main__":
-    import sys
+def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position):
     def except_hook(cls, exception, traceback):
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
@@ -96,6 +93,27 @@ if  __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     nn_brain = ExampleNNMsgProcessor()
-    data_window = DataCollectionEvaluatePilot(nn_brain.process_message, initial_position=[130,0,-38], initial_angle=-360, initial_speed=30, record=True, record_image=False)
-    data_window.gate.set_gate([0, -15], [0, 15], 5)
+    data_window = DataCollectionEvaluatePilot(
+        nn_brain.process_message,
+        initial_position=initial_position,
+        initial_angle=initial_angle,
+        initial_speed=initial_speed,
+        record=True,
+        record_image=False
+    )
+    data_window.gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
     app.exec()
+
+    return data_window.recorded_data
+
+
+if  __name__ == "__main__":
+    initial_position = [130, 0, -38]
+    initial_angle = -360
+    initial_speed = 30
+    gate_position = ([0, -15], [0, 15], 5)
+
+    recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position)
+    print("Recorded data: ", )
+    for snapshot in recorded_data:
+        print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
