@@ -1,7 +1,7 @@
 from ursina import *
 from ursina import curve
 
-delta = 0.11
+delta = 0.04
 class Particles(Entity):
     def __init__(self, car, position):
         super().__init__(

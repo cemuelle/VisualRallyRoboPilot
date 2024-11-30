@@ -9,10 +9,11 @@ import numpy as np
 from control_car import send_simulation_request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import matplotlib.pyplot as plt
+from kubernetes import client, config
+
+config.load_kube_config()
 
 # parameters
-PROTOCOL = "http"
-SERVER_IP = "127.0.0.1"
 PORT = 5000
 
 # global variables for parameters set on init
@@ -22,6 +23,14 @@ thickness = 5
 car_position = [-100, 0, -50]  # x, y, z
 car_speed = 50
 car_angle = -90
+
+def get_pods():
+    v1 = client.CoreV1Api()
+    pod_list = v1.list_namespaced_pod("isc3",label_selector='tier=headempty-zeb')
+    podIps = []
+    for pod in pod_list.items:
+        podIps.append(pod.status.pod_ip)
+    return podIps
 
 
 def load_data(path):
@@ -50,7 +59,7 @@ def load_data(path):
 
     return individual_controls
 
-def add_fitness(individual_controls):
+def add_fitness(individual_controls, list_ips):
     for idx, individual in enumerate(individual_controls):
         if isinstance(individual, tuple):
             if len(individual) == 3:  # Already has fitness
@@ -63,9 +72,8 @@ def add_fitness(individual_controls):
         else:
             print(f"Unexpected entry at index {idx}: {individual}")
             continue
-
     # Evaluate the individual using the simulation
-    def send_single_request(list_controls):
+    def send_single_request(list_controls, ip):
         global gate_p1, gate_p2, thickness, car_position, car_speed, car_angle
         #print("hop la les controles: ")
         #print(list_controls)
@@ -82,10 +90,10 @@ def add_fitness(individual_controls):
 
         cond = True
         while(cond):
-            reussied, status, time = send_simulation_request(
-                protocol=PROTOCOL,
-                server_ip=SERVER_IP,
-                port=PORT,
+            reussied, status, time, col = send_simulation_request(
+                protocol="http",
+                server_ip=ip,
+                port=5000,
                 gate_p1=gate_p1,
                 gate_p2=gate_p2,
                 thickness=thickness,
@@ -96,8 +104,8 @@ def add_fitness(individual_controls):
             )
             cond = not reussied
 
-
-        fitness = time if status else 100
+        #fitness = time if status and (col == 0) else 1000
+        fitness = time + 50 * col if status else 1000
         return (name,controlsRaw,fitness)
 
     # Function to execute parallel tasks
@@ -108,7 +116,7 @@ def add_fitness(individual_controls):
         with ThreadPoolExecutor() as executor:
             # Submit tasks with thread ID
             futures = [
-                executor.submit(send_single_request, individual_controls[thread_id])
+                executor.submit(send_single_request, individual_controls[thread_id], list_ips[thread_id])
                 for thread_id in range(n)
             ]
 
@@ -122,9 +130,11 @@ def add_fitness(individual_controls):
         # Print results and return them
         print("resultats: ")
         for i in results:
-            name, controls, _ = i
-            print(name, nControls(i))
+            print(i)
+            name, controls, score = i
+            print(name, nControls(i), score)
         return results
+
 
     pop = len(individual_controls)
     while(True):
@@ -133,11 +143,12 @@ def add_fitness(individual_controls):
         #print(newPop)
         for i in newPop:
             name, controls, score = i
-            if score != 100:
+            if score != 1000:
                 cnt += 1
             if cnt >= 2:
                 return newPop
         print("generation with no one passing the finish line, there must have been a problem. let's do it again.")
+
 
 def nControls(ind):
     a,w,s,d = 0,0,0,0
@@ -363,12 +374,16 @@ def mutate_population(population, mutation_rate):
         method = random.randrange(0, 3)
         match method:
             case 0:
+                print("full random mutation")
                 mutated_individual = mutate(individual, mutation_rate)
             case 1:
+                print("faster mutation")
                 mutated_individual = mutateFaster(individual, mutation_rate)
             case 2:
+                print("turner mutation")
                 mutated_individual = mutateTurner(individual, mutation_rate)
             case 3:
+                print("smooth random mutation")
                 mutated_individual = mutateRandomSmooth(individual, mutation_rate)
         mutated_population.append(mutated_individual)
 
@@ -404,10 +419,11 @@ def graph_speed_over_generations(generation_data):
 
 def genetic_algorithm(generation, mutation_rate, population_size, elitism_count, individual_controls):
     generation_data = []  # Store generation number and average speed
+    game_ips = get_pods()
     # Start the evolution process for the specified number of generations
     for gen in range(generation):
         print(f"\nGeneration {gen + 1}:")
-        individual_with_scores = add_fitness(individual_controls)
+        individual_with_scores = add_fitness(individual_controls,game_ips)
         print(f"Fitness done {gen + 1}")
         # Step 0: Graphs Speed avg
         speeds = [individual[2] for individual in individual_with_scores]
@@ -438,7 +454,7 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         #print(individual_controls)
         print(f"ready for gen {gen + 2}")
     # Plot average speed across generations
-    #graph_speed_over_generations(generation_data)    
+    #graph_speed_over_generations(generation_data)
 
     return next_generation
 
@@ -454,7 +470,7 @@ def genAl(generation, initial_controls, section):
     car_speed = 50
     car_angle = -90
     '''
-    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=10, elitism_count=1, individual_controls=initial_controls)
+    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=20, elitism_count=2, individual_controls=initial_controls)
 
 
 #individual_con = load_data("data_trajectory_test/*.npz")
@@ -979,7 +995,7 @@ individual_controls = [('individual_0',
         (0, 0, 0, 0),
         (0, 0, 0, 0)]),
     ]
-genetic_algorithm(generation=1, mutation_rate=0.2, population_size=10, elitism_count=1, individual_controls=individual_controls)
+#genetic_algorithm(generation=1, mutation_rate=0.2, population_size=20, elitism_count=2, individual_controls=individual_controls)
 
 """individual_controls = [('individual_0',
         [(1, 0, 0, 0),
@@ -1088,4 +1104,4 @@ genetic_algorithm(generation=1, mutation_rate=0.2, population_size=10, elitism_c
     ]"""
 
 paramTab =   [[-140,-21], [-165,-24], 5, [-100,0,-50], 50, -90]
-yay = genAl(5,individual_controls,paramTab)
+yay = genAl(10,individual_controls,paramTab)

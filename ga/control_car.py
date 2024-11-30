@@ -24,7 +24,7 @@ class CarController:
 
     def send_command(self, command):
         url = f"{self.protocol}://{self.server_ip}:{self.port}/command"
-        headers = {'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json','Connexion': 'close'}
         data = {
             "command": command
         }
@@ -33,8 +33,8 @@ class CarController:
             if response.status_code == 200:
                 # print("Success:", response.json())
                 pass
-            else:
-                print(f"Error: {response.status_code}, Response: {response.text}")
+            #else:
+                #print(f"Error: {response.status_code}, Response: {response.text}")
         except requests.RequestException as e:
             print(f"Request failed: {e}")
 
@@ -45,7 +45,7 @@ class CarController:
             if response.status_code == 200:
                 return response.json()
             else:
-                print(f"Error: {response.status_code}, Response: {response.text}")
+                #print(f"Error: {response.status_code}, Response: {response.text}")
                 return None
         except requests.RequestException as e:
             print(f"Request failed: {e}")
@@ -57,7 +57,7 @@ class CarController:
                 self.send_command(f"push {self.commands[i]};")
             else:
                 self.send_command(f"release {self.commands[i]};")
-       
+
 def simulate_car_movement(car_position, gate_position, list_controls, car_controller):
     gate = Gate()
     gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
@@ -138,7 +138,7 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
 
     url = f"{protocol}://{server_ip}:{port}/simulate"
     headers = {'Content-Type': 'application/json'}
-    
+
     data = {
         "gate_p1": gate_p1,
         "gate_p2": gate_p2,
@@ -156,25 +156,78 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
             response_data = response.json()
             status = response_data.get("status", False)
             steps = response_data.get("steps", -1)  # Expecting the server to return "steps"
-            return True, status, steps
+            collisions = response_data.get("collisions", -1)
+            response.close()
+            return True, status, steps, collisions
         else:
-            print(f"Error: {response.status_code}, Response: {response.text}")
-            return False, False, -1
+            #print(f"Error: {response.status_code}, Response: {response.text}")
+            response.close()
+            return False, False, -1, -1
     except requests.RequestException as e:
         print(f"Request failed: {e}")
-        return False, False, -1
+        return False, False, -1, -1
 
 if __name__ == "__main__":
     car_position = [0, 0, 1]  # [x, y, z]
     car_speed = 50  # Speed in some units
     car_angle = -90  # Angle in degrees
     gate_position = [[-140, -21], [-165, -24], 5]  # [gate_p1, gate_p2, gate_thickness]
-    list_controls = [(1, 0, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (1, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 1, 0), (1, 0, 1, 0), (1, 0, 1, 1), (0, 1, 1, 0), (0, 1, 1, 0), (0, 0, 1, 0), (1, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (0, 1, 1, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (0, 0, 1, 1), (1, 1, 1, 1), (0, 1, 0, 1), (0, 0, 0, 1), (0, 0, 1, 1), (0, 0, 0, 1), (0, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (0, 1, 0, 0), (0, 0, 0, 0), (0, 1, 0, 0), (0, 1, 1, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 0, 0), (0, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1), (0, 0, 0, 0), (1, 0, 0, 0), (0, 0, 0, 0)]
+    list_controls = [(1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (0, 0, 1, 0),
+        (1, 0, 1, 0),
+        (1, 0, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (0, 1, 1, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (0, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (1, 0, 0, 1),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0),
+        (0, 0, 0, 0)]
 
-    deltaT = 0.1
-    reussied, status, steps = send_simulation_request(
+    deltaT = 0.11
+    reussied, status, steps, col = send_simulation_request(
         "http", 
-        "127.0.0.1", 
+        "10.244.6.220", 
         5000, 
         gate_position[0], 
         gate_position[1], 
@@ -185,6 +238,7 @@ if __name__ == "__main__":
         list_controls, 
         deltaT
     )
-
+    print("Succeeded?:", reussied)
     print("Simulation Status:", status)
     print("Number of deltaT steps to arrive at gate:", steps)
+    print("Number of collisions:", col)
