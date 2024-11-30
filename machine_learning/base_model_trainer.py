@@ -36,10 +36,11 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
         avg_vloss = running_loss / (i+1)
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
+        print(f"predicted: {voutputs}, actual: {vlabels}")
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
-            model_path = 'model_{}_{}.pth'.format(timestamp, epoch)
+            model_path = 'models/model_{}_{}.pth'.format(timestamp, epoch)
             print(f"Saving model to {model_path}")
             torch.save(model.state_dict(), model_path)
         
@@ -85,12 +86,15 @@ if __name__ == "__main__":
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
 
-    training_dataloader = DataLoader(training_dataset, batch_size=16, shuffle=True)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=2, shuffle=False)
+    training_dataloader = DataLoader(training_dataset, batch_size=8, shuffle=True)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=4, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters())
 
     class_weights = torch.tensor([0.6, 2.0, 1.0, 1.0]).to(device)
+    # criterion = nn.BCEWithLogitsLoss(weight=class_weights)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
+    # criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
+    # criterion = nn.BCEWithLogitsLoss()
 
     trainer(model, training_dataloader, validation_dataloader, 100)

@@ -24,7 +24,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 print("Loading model...")
-model_path = "./model_20241128_132459_18.pth"
+model_path = "./models/model_20241130_093127_11.pth"
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)
@@ -57,10 +57,10 @@ class VisualNNMsgProcessor:
         formatted_output = ["{:.4f}".format(x) for x in output_list] 
 
         # convert the output to boolean values
-        forward = float(formatted_output[0]) > 0.5
-        backward = float(formatted_output[1]) > 0.5
-        left = float(formatted_output[2]) > 0.5
-        right = float(formatted_output[3]) > 0.5
+        forward = float(formatted_output[0]) > 0
+        backward = float(formatted_output[1]) > 0
+        left = float(formatted_output[2]) > 0
+        right = float(formatted_output[3]) > 0
 
         # make sure the car is not moving forward and backward at the same time
         if forward and backward:
