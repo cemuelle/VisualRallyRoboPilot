@@ -1,7 +1,5 @@
 from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
 
-import sys
-
 """
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -74,7 +72,8 @@ class ExampleNNMsgProcessor:
 
         if data_collector.gate.is_car_through((car_position[0], car_position[2])) and len(data_collector.recorded_data) > 2:
             data_collector.network_interface.disconnect()
-            sys.exit("Execution stopped: Car has passed through the gate.")
+            print("Execution stopped: Car has passed through the gate.")
+            return
         else:
             commands = self.nn_infer(message)
 
@@ -108,6 +107,9 @@ if  __name__ == "__main__":
     gate_position = ([0, -15], [0, 15], 5)
 
     recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position)
+    print("First execution done")
+    recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position)
+    print("Second execution done")
     print("Recorded data: ", )
     for snapshot in recorded_data:
         print("[", snapshot.current_controls[0], ",", snapshot.current_controls[1], ",", snapshot.current_controls[2], ",", snapshot.current_controls[3], "],")
