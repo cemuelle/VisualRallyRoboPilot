@@ -3,13 +3,13 @@ from rallyrobopilot import *
 from ga.gate import Gate
 
 class DataCollectionEvaluatePilot():
-    def __init__(self, message_processing_callback = None, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0, record = True, record_image = False):
+    def __init__(self, message_processing_callback = None, address = "127.0.0.1", port = 7654, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0, record = True, record_image = False):
         super().__init__()
         self.command_directions = { "w":"forward", "s":"back", "d":"right", "a":"left" }
 
         self.message_processing_callback = message_processing_callback
 
-        self.network_interface = NetworkDataCmdInterface(self.collectMsg)
+        self.network_interface = NetworkDataCmdInterface(self.collectMsg, address=address, port=port)
 
         self.setInitialPosition(initial_position, initial_angle, initial_speed)
 

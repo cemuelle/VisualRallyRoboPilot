@@ -85,6 +85,8 @@ def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position):
     nn_brain = ExampleNNMsgProcessor()
     data_window = DataCollectionEvaluatePilot(
         nn_brain.process_message,
+        address="127.0.0.1",
+        port=7654,
         initial_position=initial_position,
         initial_angle=initial_angle,
         initial_speed=initial_speed,
