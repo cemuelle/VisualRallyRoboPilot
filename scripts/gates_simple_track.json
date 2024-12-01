@@ -1,0 +1,34 @@
+{
+"gate_position_simple": [
+      {
+        "p1_gate": [-20, -10],
+        "p2_gate": [-20, 10],
+        "start_position": [60, 0, 0],
+        "start_orientation": -90
+      },
+      {
+        "p1_gate": [0, 120],
+        "p2_gate": [8, 140],
+        "start_position": [-90, 0, 90],
+        "start_orientation": 80
+      },
+      {
+        "p1_gate": [-60, 180],
+        "p2_gate": [-65, 160],
+        "start_position": [0, 0, 130],
+        "start_orientation": 270
+      },
+      {
+        "p1_gate": [-78, 293],
+        "p2_gate": [-85, 270],
+        "start_position": [-66, 0, 177],
+        "start_orientation": 115
+      },
+      {
+        "p1_gate": [117, 30],
+        "p2_gate": [100, 36],
+        "start_position": [80, 0, 195],
+        "start_orientation": -283
+      }
+    ]
+}
