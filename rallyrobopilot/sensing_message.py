@@ -132,3 +132,6 @@ class NetworkDataCmdInterface:
         except Exception as e:
             print(f"Error while closing the socket: {e}")
 
+    def is_connected(self):
+        return self.socket.fileno() != -1
+

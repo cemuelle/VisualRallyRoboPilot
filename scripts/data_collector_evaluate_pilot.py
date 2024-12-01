@@ -1,17 +1,8 @@
-import os.path
-
 from rallyrobopilot import *
-
-from PyQt6.QtCore import Qt, QTimer, QCoreApplication
-from PyQt6 import QtCore, QtWidgets, QtGui
-from PyQt6 import uic
 
 from ga.gate import Gate
 
-import pickle
-import lzma
-
-class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
+class DataCollectionEvaluatePilot():
     def __init__(self, message_processing_callback = None, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0, record = True, record_image = False):
         super().__init__()
         self.command_directions = { "w":"forward", "s":"back", "d":"right", "a":"left" }
@@ -21,10 +12,6 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
         self.network_interface = NetworkDataCmdInterface(self.collectMsg)
 
         self.setInitialPosition(initial_position, initial_angle, initial_speed)
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.network_interface.recv_msg)
-        self.timer.start(25)
 
         self.saving_worker = None
 
@@ -73,39 +60,39 @@ class DataCollectionEvaluatePilot(QtWidgets.QMainWindow):
         command_types = ["release", "push"]
         self.network_interface.send_cmd(command_types[start] + " " + direction+";")
 
-    def saveRecord(self, close_after_save=False):
-        if self.saving_worker is not None:
-            print("[X] Already saving !")
-            return
+    # def saveRecord(self, close_after_save=False):
+    #     if self.saving_worker is not None:
+    #         print("[X] Already saving !")
+    #         return
 
-        if len(self.recorded_data) == 0:
-            print("[X] No data to save !")
-            return
+    #     if len(self.recorded_data) == 0:
+    #         print("[X] No data to save !")
+    #         return
 
-        if self.recording:
-            self.toggleRecord()
+    #     if self.recording:
+    #         self.toggleRecord()
 
-        record_name = "record_%d.npz"
-        fid = 0
-        while os.path.exists(record_name % fid):
-            fid += 1
+    #     record_name = "record_%d.npz"
+    #     fid = 0
+    #     while os.path.exists(record_name % fid):
+    #         fid += 1
 
-        class ThreadedSaver(QtCore.QThread):
-            def __init__(self, path, data):
-                super().__init__()
-                self.path = path
-                self.data = data
+    #     class ThreadedSaver(QtCore.QThread):
+    #         def __init__(self, path, data):
+    #             super().__init__()
+    #             self.path = path
+    #             self.data = data
 
-            def run(self):
-                with lzma.open(self.path, "wb") as f:
-                    pickle.dump(self.data, f)
+    #         def run(self):
+    #             with lzma.open(self.path, "wb") as f:
+    #                 pickle.dump(self.data, f)
 
-        self.saving_worker = ThreadedSaver(record_name % fid, self.recorded_data)
-        self.recorded_data = []
-        self.saving_worker.finished.connect(self.onRecordSaveDone)
-        if close_after_save:
-            self.saving_worker.finished.connect(QCoreApplication.quit)
-        self.saving_worker.start()
+    #     self.saving_worker = ThreadedSaver(record_name % fid, self.recorded_data)
+    #     self.recorded_data = []
+    #     self.saving_worker.finished.connect(self.onRecordSaveDone)
+    #     if close_after_save:
+    #         self.saving_worker.finished.connect(QCoreApplication.quit)
+    #     self.saving_worker.start()
 
     def onRecordSaveDone(self):
         print("[+] Recorded data saved to", self.saving_worker.path)

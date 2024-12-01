@@ -1,6 +1,3 @@
-from PyQt6 import QtWidgets
-
-from data_collector import DataCollectionUI
 from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
 
 import sys
@@ -76,9 +73,8 @@ class ExampleNNMsgProcessor:
         car_position = message.car_position
 
         if data_collector.gate.is_car_through((car_position[0], car_position[2])) and len(data_collector.recorded_data) > 2:
-            # data_collector.saveRecord(close_after_save=True)
             data_collector.network_interface.disconnect()
-            QtWidgets.QApplication.quit()
+            sys.exit("Execution stopped: Car has passed through the gate.")
         else:
             commands = self.nn_infer(message)
 
@@ -86,12 +82,6 @@ class ExampleNNMsgProcessor:
                 data_collector.onCarControlled(command, start)
 
 def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position):
-    def except_hook(cls, exception, traceback):
-        sys.__excepthook__(cls, exception, traceback)
-    sys.excepthook = except_hook
-
-    app = QtWidgets.QApplication(sys.argv)
-
     nn_brain = ExampleNNMsgProcessor()
     data_window = DataCollectionEvaluatePilot(
         nn_brain.process_message,
@@ -102,7 +92,9 @@ def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position):
         record_image=False
     )
     data_window.gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
-    app.exec()
+
+    while data_window.network_interface.is_connected():
+        data_window.network_interface.recv_msg()
 
     return data_window.recorded_data
 
