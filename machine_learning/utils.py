@@ -55,6 +55,9 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         return self.inputs_image[idx], torch.tensor(self.inputs_color[idx], dtype=torch.float32), torch.tensor(self.inputs_speed[idx], dtype=torch.float32), torch.tensor(self.targets[idx], dtype=torch.float32)
     
+    def get_distribution(self):
+        # get how many samples of each class
+        return np.sum(np.array(self.targets), axis=0)
 
 # used to load data for test
 def load_data_single_folder(folder_path):

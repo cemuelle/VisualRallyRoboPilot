@@ -24,7 +24,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 print("Loading model...")
-model_path = "./models/model_20241130_093127_11.pth"
+model_path = "./models/model_20241201_104708_14.pth"
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)

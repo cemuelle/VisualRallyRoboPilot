@@ -32,10 +32,10 @@ class AlexNetPerso(nn.Module):
         self.classifier = nn.Sequential(
             nn.Dropout(p=dropout),
             nn.Linear(image_features_size + speed, 4096),
-            nn.Sigmoid(),
+            nn.ReLU(inplace=True),
             nn.Dropout(p=dropout),
             nn.Linear(4096, 4096),
-            nn.Sigmoid(),
+            nn.ReLU(inplace=True),
             nn.Linear(4096, num_classes),
         )
 

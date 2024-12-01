@@ -91,9 +91,11 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(model.parameters())
 
-    class_weights = torch.tensor([0.6, 2.0, 1.0, 1.0]).to(device)
-    # criterion = nn.BCEWithLogitsLoss(weight=class_weights)
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    print(dataset.get_distribution())
+
+    class_weights = torch.tensor([0.7, 2.0, 2.0, 2.0]).to(device)
+    criterion = nn.BCEWithLogitsLoss(weight=class_weights)
+    # criterion = nn.CrossEntropyLoss(weight=class_weights)
     # criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
     # criterion = nn.BCEWithLogitsLoss()
 
