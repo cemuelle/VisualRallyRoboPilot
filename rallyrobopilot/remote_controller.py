@@ -192,6 +192,7 @@ class RemoteController(Entity):
             self.connected_client.sendall(data)
         except socket.error as e:
             print(f"Socket error: {e}")
+            self.disconnect()
 
         self.last_sensing = time.time()
 
