@@ -458,7 +458,7 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
     # Plot average speed across generations
     #graph_speed_over_generations(generation_data)
 
-    return next_generation
+    return elite
 
 
 def genAl(generation, initial_controls, section):

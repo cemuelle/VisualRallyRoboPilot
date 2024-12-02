@@ -31,23 +31,25 @@ def process_blocks(base_directory):
                                         population.append(data["controls"])
                                     else:
                                         raise Exception(f"The context doesn't match the previous context {context} ({file_path})") 
-                                
-
-
-
-
 
                             except json.JSONDecodeError as e:
                                 print(f"    Error decoding JSON in file {file_path}: {e}")
                             except Exception as e:
                                 print(f"    Error processing file {file_path}: {e}")
+                                
                     print("finito le ", iteration_dir)
                     print(context)
                     print(population)    
-                    genAl(10,population,context)
-                    
-                    
+                    gaOut = genAl(10,population,context)
+                    for elit in gaOut:
+                        individual_file_path = os.path.join(iteration_dir, f"ga_augmented_{iteration_dir}%d.json")
+                        with open(individual_file_path, "w") as f:
+                            json.dump({
+                                "initial_context": context,
+                                "controls": elit
+                            }, f, indent=4)   
 
+        
 
 base_directory = "out"  # Directory with the controls
 process_blocks(base_directory)
