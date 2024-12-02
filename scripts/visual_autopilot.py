@@ -24,7 +24,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 print("Loading model...")
-model_path = "./models/model_20241201_104708_14.pth"
+model_path = "./models/model_20241202_131408_49.pth"
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)
@@ -41,26 +41,29 @@ class VisualNNMsgProcessor:
     def nn_infer(self, message):
         image = message.image
         image = Image.fromarray(image)
-        color = colToRgb("cyan")
-
         image = preprocess(image)
+        image = image.unsqueeze(0)
+
+        color = colToRgb("cyan")
+        color = torch.tensor(color).float().unsqueeze(0)
 
         speed = message.car_speed
+        speed = torch.tensor(speed).float().unsqueeze(0)
+        
         with torch.no_grad():
-            image = image.unsqueeze(0)
-            color = torch.tensor(color).float().unsqueeze(0)
-            speed = torch.tensor(speed).float().unsqueeze(0)
             output = model(image, color, speed)
-        print("Models output: ", output)
+
+        output = torch.sigmoid(output)
+        print("Models output : ", output)
 
         output_list = output.tolist()[0]
         formatted_output = ["{:.4f}".format(x) for x in output_list] 
 
         # convert the output to boolean values
-        forward = float(formatted_output[0]) > 0
-        backward = float(formatted_output[1]) > 0
-        left = float(formatted_output[2]) > 0
-        right = float(formatted_output[3]) > 0
+        forward = float(formatted_output[0]) > 0.5
+        backward = float(formatted_output[1]) > 0.5
+        left = float(formatted_output[2]) > 0.5
+        right = float(formatted_output[3]) > 0.5
 
         # make sure the car is not moving forward and backward at the same time
         if forward and backward:

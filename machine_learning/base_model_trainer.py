@@ -36,7 +36,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
         avg_vloss = running_loss / (i+1)
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
-        print(f"predicted: {voutputs}, actual: {vlabels}")
+        print(f"predicted: {voutputs}, sigmoid : {torch.sigmoid(voutputs)}, actual: {vlabels}")
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
@@ -87,16 +87,15 @@ if __name__ == "__main__":
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
 
     training_dataloader = DataLoader(training_dataset, batch_size=8, shuffle=True)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=4, shuffle=False)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters())
 
-    print(dataset.get_distribution())
+    pos_weight = dataset.get_distribution().sum() / dataset.get_distribution()
 
-    class_weights = torch.tensor([0.7, 2.0, 2.0, 2.0]).to(device)
-    criterion = nn.BCEWithLogitsLoss(weight=class_weights)
-    # criterion = nn.CrossEntropyLoss(weight=class_weights)
-    # criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
-    # criterion = nn.BCEWithLogitsLoss()
+    print(pos_weight)
+    
+    class_weights = torch.tensor(pos_weight).to(device)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
 
     trainer(model, training_dataloader, validation_dataloader, 100)
