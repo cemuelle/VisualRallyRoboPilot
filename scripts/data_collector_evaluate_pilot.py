@@ -1,6 +1,6 @@
 from rallyrobopilot import *
 
-from ga.gate import Gate
+from gate import Gate
 
 class DataCollectionEvaluatePilot():
     def __init__(self, message_processing_callback = None, address = "127.0.0.1", port = 7654, initial_position = [0,0,0], initial_angle = 0, initial_speed = 0, record = True, record_image = False):
