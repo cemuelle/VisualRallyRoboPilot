@@ -19,8 +19,9 @@ import torch.nn as nn
 onlyOnce = True
 
 # parameters
+RANDOMIZATION_RANGE = 10
 MAX_DURATION = 5
-N_ITERATIONS = 2
+N_ITERATIONS = 5
 GATE_WIDTH = 5
 PORT = 7654
 OUTPUT_DIR = "out"
@@ -173,11 +174,18 @@ def save_individual_data(directory, individual_name, initial_context, control_da
             "controls": control_data
         }, f, indent=4)
 
-# Process each gate
 for idx, gate_config in enumerate(gate_configurations):
     for iteration in range(N_ITERATIONS):
         # Prepare initial context
-        initial_position = gate_config["start_position"]
+        base_position = gate_config["start_position"]
+        randomized_position = [
+            base_position[0] + random.uniform(-RANDOMIZATION_RANGE, RANDOMIZATION_RANGE),
+            base_position[1],
+            base_position[2] + random.uniform(-RANDOMIZATION_RANGE, RANDOMIZATION_RANGE)
+        ]
+
+        # Assign the same randomized position for the whole iteration
+        initial_position = randomized_position[:]  # Make sure to copy the list
         initial_angle = gate_config["start_orientation"]
         gate_position = (
             gate_config["p1_gate"],
@@ -192,11 +200,16 @@ for idx, gate_config in enumerate(gate_configurations):
         iteration_dir = os.path.join(context_dir, f"iteration_{iteration}")
 
         # Generate multiple individuals for the gate
-        for individual_idx in range(1):  # 10 individuals per gate
+        for individual_idx in range(10):  # Adjusted for 10 individuals per gate
             time.sleep(0.9)  # Delay for the socket to be free again
 
+            # Verify that initial_position is not modified
+            position_to_use = initial_position[:]  # Always work with a copy
             # Simulate data retrieval (replace with actual function)
-            recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position, "127.0.0.1")
+            recorded_data = get_mlp_path(position_to_use, initial_angle, initial_speed, gate_position, "127.0.0.1")
+
+            # Print position to verify consistency
+            print(f"Position during individual {individual_idx} generation:", position_to_use)
 
             # Format control data
             control_data = [tuple(snapshot.current_controls) for snapshot in recorded_data]
@@ -204,6 +217,8 @@ for idx, gate_config in enumerate(gate_configurations):
             # Save data
             individual_name = f"individual_{individual_idx}"
             save_individual_data(iteration_dir, individual_name, initial_context, control_data)
+
+
 
         
         
