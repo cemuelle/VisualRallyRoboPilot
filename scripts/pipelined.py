@@ -5,18 +5,23 @@ import glob
 import numpy as np
 import json
 import random
-import numpy as np
-import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-from data_collector import DataCollectionUI
 from data_collector_evaluate_pilot import DataCollectionEvaluatePilot
-from PyQt6 import QtWidgets
-import sys
 import torch
 import torch.nn as nn
-import json
-from ga.ga_pipeline import genAl
+from ga_pipeline import genAl, get_pods
+from kubernetes import client, config
+
+config.load_kube_config()
+
+#variable
+onlyOnce = True
+
+# parameters
+N_ITERATIONS = 5
+GATE_WIDTH = 5
+PORT = 7654
 
 class MLP(nn.Module):
     def __init__(self):
@@ -71,110 +76,85 @@ class ExampleNNMsgProcessor:
         ]
 
     def process_message(self, message, data_collector):
-
         car_position = message.car_position
 
         if data_collector.gate.is_car_through((car_position[0], car_position[2])) and len(data_collector.recorded_data) > 2:
-            # data_collector.saveRecord(close_after_save=True)
             data_collector.network_interface.disconnect()
-            QtWidgets.QApplication.quit()
+            print("bon bah on ferme")
+            return
         else:
             commands = self.nn_infer(message)
 
             for command, start in commands:
                 data_collector.onCarControlled(command, start)
 
-def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position):
-    def except_hook(cls, exception, traceback):
-        sys.__excepthook__(cls, exception, traceback)
-    sys.excepthook = except_hook
-
-    app = QtWidgets.QApplication(sys.argv)
-
+def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position, ip):
+    print("addresse: ", ip, "port: ", PORT)
     nn_brain = ExampleNNMsgProcessor()
+
     data_window = DataCollectionEvaluatePilot(
         nn_brain.process_message,
+        address=ip,
+        port=PORT,
         initial_position=initial_position,
         initial_angle=initial_angle,
         initial_speed=initial_speed,
         record=True,
         record_image=False
     )
-    data_window.gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
-    app.exec()
 
-    return data_window.recorded_data
+    try:
+        data_window.gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
 
+        while data_window.network_interface.is_connected():
+            data_window.network_interface.recv_msg()
+        return data_window.recorded_data
+    except:
+        print("disconnected.")
+        data_collector.network_interface.disconnect()
 
 # Load gate configurations from JSON file
 with open("gates_simple_track.json", "r") as file:
     gate_configurations = json.load(file)["gate_position_simple"]
 
-# Predefined variables for gates
-gate_0_output = []
-gate_1_output = []
-gate_2_output = [] 
-gate_3_output = []  
-gate_4_output = []  
-gate_5_output = []  
-
-
-# Mapping gate index to variable
-gate_outputs = {
-    0: gate_0_output,
-    1: gate_1_output,
-    2: gate_2_output,
-    3: gate_3_output,
-    4: gate_4_output,
-    5: gate_5_output,
-}
+allPods = get_pods()
+print(allPods)
 
 # Process each gate
 for idx, gate_config in enumerate(gate_configurations):
-    gate_output = gate_outputs[idx]
-    
-    # Shared parameters
-    initial_position = gate_config["start_position"]
-    initial_angle = gate_config["start_orientation"]
-    gate_position = (
-        gate_config["p1_gate"],
-        gate_config["p2_gate"],
-        5  # Fixed gate width
-    )
-    
-    # Generate multiple individuals for the gate
-    for individual_idx in range(10):  # 10 individuals per gate
-        initial_speed = 30  # Example variation in initial speed
-        
-        # Generate recorded data for the individual
-        recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position)
-        
-        # Format the recorded data
-        formatted_data = (
-            f"individual_{idx}_{individual_idx}",
-            [tuple(snapshot.current_controls) for snapshot in recorded_data]
+    for i in range(N_ITERATIONS):
+        gate_output = []
+
+        # Start parameters
+        initial_position = gate_config["start_position"]
+        initial_angle = gate_config["start_orientation"]
+        gate_position = (
+            gate_config["p1_gate"],
+            gate_config["p2_gate"],
+            GATE_WIDTH  # Fixed gate width
         )
-        gate_output.append(formatted_data)
+        initial_speed = random.randrange(-20, 51)
+
+        initial_context = [gate_config["p1_gate"], gate_config["p2_gate"], GATE_WIDTH, initial_position, initial_speed, initial_angle]
+
+        # Generate multiple individuals for the gate
+        for individual_idx in range(10):  # 10 individuals per gate
+            # little delay for the socket to be free again
+            time.sleep(0.9)
+            # Generate recorded data for the individual
+            recorded_data = get_mlp_path(initial_position, initial_angle, initial_speed, gate_position,"127.0.0.1")
+
+            # Format the recorded data
+            formatted_data = (
+                f"individual_{idx}_{individual_idx}",
+                [tuple(snapshot.current_controls) for snapshot in recorded_data]
+            )
+            gate_output.append(formatted_data)
 
 
-'''
-    gate_p1 = [-140,-21]
-    gate_p2 = [-165,-24]
-    thickness = 5
-    car_position = [10,0,1]  # x, y, z
-    car_speed = 50
-    car_angle = -90
-'''
-params = [gate_config["p1_gate"],gate_config["p2_gate"],5,gate_config["start_position"],30,gate_config["start_orientation"]]
-genAl(3,gate_0_output,params)
-
-#genetic_algorithm(generation=3, mutation_rate=0, population_size=10, elitism_count=1, individual_controls=gate_0_output)
-#genetic_algorithm(generation=3, mutation_rate=0, population_size=10, elitism_count=1, individual_controls=gate_1_output)
-#genetic_algorithm(generation=3, mutation_rate=0, population_size=10, elitism_count=1, individual_controls=gate_2_output)
-
-
-
-
-
-
-
+        out = genAl(3,gate_output,initial_context)
+        print("initial context: ")
+        print(initial_context)
+        print("final trajectory: ")
+        print(out)
+        # TODO: prints the genAl into a file with the initial context

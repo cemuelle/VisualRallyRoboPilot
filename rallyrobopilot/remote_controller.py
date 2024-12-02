@@ -216,6 +216,7 @@ class RemoteController(Entity):
             self.connected_client.sendall(data)
         except socket.error as e:
             print(f"Socket error: {e}")
+            self.disconnect()
 
     def get_sensing_data(self):
         current_controls = (held_keys['w'] or held_keys["up arrow"],

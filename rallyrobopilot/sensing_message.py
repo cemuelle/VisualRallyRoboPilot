@@ -94,6 +94,7 @@ import socket
 import imageio
 class NetworkDataCmdInterface:
     def __init__(self, callback, address = "127.0.0.1", port = 7654):
+        print("addresse: ", address, "port: ", port)
         self.data = []
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
