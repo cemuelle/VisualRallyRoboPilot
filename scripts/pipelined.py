@@ -111,7 +111,7 @@ def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position, 
         return data_window.recorded_data
     except:
         print("disconnected.")
-        data_collector.network_interface.disconnect()
+        data_window.network_interface.disconnect()
 
 # Load gate configurations from JSON file
 with open("gates_simple_track.json", "r") as file:
