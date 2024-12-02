@@ -6,6 +6,13 @@ class AlexNetPerso(nn.Module):
         super().__init__()
         dropout = 0.5
 
+        self.use_speed = True
+
+        if self.use_speed:
+            self.speed_size = 1
+        else:
+            self.speed_size = 0
+
         # Convolutional layers
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 12, kernel_size=5, stride=2),
@@ -22,12 +29,14 @@ class AlexNetPerso(nn.Module):
             nn.ReLU()
         )
 
-        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+        self.avgpool = nn.Sequential(
+            nn.AdaptiveAvgPool2d((6, 6)),
+            nn.Flatten(),
+        )
 
         # Fully connected layers
         self.fc_layers = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(64*6*6, 100),
+            nn.Linear(64*6*6 + self.speed_size, 100),
             nn.Dropout(p=dropout),
             nn.ReLU(),
             nn.Linear(100, 10),
@@ -40,6 +49,14 @@ class AlexNetPerso(nn.Module):
     def forward(self, image, route_color, speed):
         image = self.conv_layers(image)
         image = self.avgpool(image)
-        image = self.fc_layers(image)
+
+        if self.use_speed:
+            if len(speed.shape) == 1:
+                speed = speed.unsqueeze(0)
+            features = torch.cat((image, speed), dim=1)
+        else:
+            features = image
+
+        image = self.fc_layers(features)
         
         return image

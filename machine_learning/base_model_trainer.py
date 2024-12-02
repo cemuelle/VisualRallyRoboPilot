@@ -44,7 +44,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
-            model_path = 'models/model_{}_{}.pth'.format(timestamp, epoch)
+            model_path = 'models/model_{}_{}.pth'.format(timestamp, epoch+1)
             print(f"Saving model to {model_path}")
             torch.save(model.state_dict(), model_path)
 
