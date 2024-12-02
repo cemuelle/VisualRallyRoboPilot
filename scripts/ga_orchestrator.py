@@ -26,9 +26,17 @@ def process_blocks(base_directory):
                                     print(len(context))
                                     if len(context) == 0:
                                         context = data["initial_context"]
-                                        population.append(data["controls"])
+                                        tupledControls = []
+                                        for i in data["controls"]:
+                                            tupledControls.append(tuple(i))
+
+                                        population.append((iteration_path, tupledControls))
+
                                     elif context == data["initial_context"]:
-                                        population.append(data["controls"])
+                                        tupledControls = []
+                                        for i in data["controls"]:
+                                            tupledControls.append(tuple(i))
+                                        population.append((iteration_path, tupledControls))
                                     else:
                                         raise Exception(f"The context doesn't match the previous context {context} ({file_path})") 
 
@@ -36,13 +44,13 @@ def process_blocks(base_directory):
                                 print(f"    Error decoding JSON in file {file_path}: {e}")
                             except Exception as e:
                                 print(f"    Error processing file {file_path}: {e}")
-                                
+
                     print("finito le ", iteration_dir)
                     print(context)
-                    print(population)    
-                    gaOut = genAl(10,population,context)
+                    print(population)
+                    gaOut = genAl(2,population,context)
                     for elit in gaOut:
-                        individual_file_path = os.path.join(iteration_dir, f"ga_augmented_{iteration_dir}%d.json")
+                        individual_file_path = os.path.join(iteration_path, f"ga_augmented_{iteration_dir}.json")
                         with open(individual_file_path, "w") as f:
                             json.dump({
                                 "initial_context": context,

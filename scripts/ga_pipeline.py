@@ -457,8 +457,10 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         print(f"ready for gen {gen + 2}")
     # Plot average speed across generations
     #graph_speed_over_generations(generation_data)
-
-    return elite
+    strappedElites = []
+    for i in elite:
+        strappedElites.append(i[1])
+    return strappedElites
 
 
 def genAl(generation, initial_controls, section):
