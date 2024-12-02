@@ -12,6 +12,7 @@ from data_collector import DataCollectionUI
 from machine_learning.utils import colToRgb
 from rallyrobopilot import *
 from PIL import Image
+from machine_learning.utils import get_most_recent_model
 r"""
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -23,8 +24,9 @@ Be warned that this could also cause crash on the client side if socket sending 
 /!\ Do not work directly in this file (make a copy and rename it) to prevent future pull from erasing what you write here.
 """
 
-print("Loading model...")
-model_path = "./models/model_20241202_131408_49.pth"
+model_path = get_most_recent_model("./models")
+# model_path = "./models/model_20241202_151824_43.pth"
+print(f"Loading model from {model_path}")
 model_dict = torch.load(model_path, weights_only=True)
 
 model = AlexNetPerso(4)

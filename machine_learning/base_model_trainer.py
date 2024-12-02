@@ -16,6 +16,9 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
     last_saved_model_path = None
 
+    training_loss = []
+    validation_loss = []
+
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
         model.train()
@@ -41,6 +44,8 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
         # print(f"predicted: {voutputs}, sigmoid : {torch.sigmoid(voutputs)}, actual: {vlabels}")
+        training_loss.append(avg_loss)
+        validation_loss.append(avg_vloss)
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
@@ -55,6 +60,18 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
                     print(f"Removed previous model {last_saved_model_path}")
 
             last_saved_model_path = model_path
+
+    # make a graph of the training and validation loss across epochs
+
+    import matplotlib.pyplot as plt
+
+    plt.plot(training_loss, label="Training Loss")
+    plt.plot(validation_loss, label="Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel(f"Loss ({criterion.__class__.__name__})")
+    plt.legend()
+    plt.title("Training the CNN")
+    plt.show()
         
 
 def train_one_epoch(training_dataloader):
@@ -99,11 +116,12 @@ if __name__ == "__main__":
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
 
     training_dataloader = DataLoader(training_dataset, batch_size=8, shuffle=True)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=8, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters())
 
     pos_weight = dataset.get_distribution().sum() / dataset.get_distribution()
+    pos_weight[1] = pos_weight[1] * 0.3
 
     print(pos_weight)
     

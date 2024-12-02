@@ -6,7 +6,7 @@ class AlexNetPerso(nn.Module):
         super().__init__()
         dropout = 0.5
 
-        self.use_speed = True
+        self.use_speed = False
 
         if self.use_speed:
             self.speed_size = 1

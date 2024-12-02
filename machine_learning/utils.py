@@ -93,3 +93,33 @@ def colToRgb(colorName):
             return [0,0,255]
         case default:
             return [0,0,0]
+        
+def get_most_recent_model(models_folder):
+    # Get all files in the models folder
+    model_files = [
+        f for f in os.listdir(models_folder)
+        if os.path.isfile(os.path.join(models_folder, f)) and f.startswith("model_") and f.endswith(".pth")
+    ]
+    
+    # Extract timestamp and epoch from filenames
+    def parse_model_file(filename):
+        try:
+            # Remove "model_" prefix and ".pth" suffix
+            timestamp_epoch = filename.replace("model_", "").replace(".pth", "")
+            timestamp, epoch = timestamp_epoch.rsplit("_", 1)
+            return timestamp, int(epoch)
+        except ValueError:
+            return None
+
+    # Sort files by timestamp and epoch
+    model_files = [
+        (filename, *parse_model_file(filename))
+        for filename in model_files
+        if parse_model_file(filename) is not None
+    ]
+    model_files.sort(key=lambda x: (x[1], x[2]), reverse=True)  # Sort by timestamp, then epoch, descending
+
+    if model_files:
+        return os.path.join(models_folder, model_files[0][0])
+    else:
+        return None
