@@ -6,11 +6,15 @@ from models import AlexNetPerso
 from preprocessing import preprocess
 from torch.utils.data import DataLoader, random_split
 
+import os
+
 def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     epoch_number = 0
 
     best_loss = float('inf')
+
+    last_saved_model_path = None
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
@@ -36,13 +40,21 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
         avg_vloss = running_loss / (i+1)
 
         print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
-        print(f"predicted: {voutputs}, sigmoid : {torch.sigmoid(voutputs)}, actual: {vlabels}")
+        # print(f"predicted: {voutputs}, sigmoid : {torch.sigmoid(voutputs)}, actual: {vlabels}")
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
             model_path = 'models/model_{}_{}.pth'.format(timestamp, epoch)
             print(f"Saving model to {model_path}")
             torch.save(model.state_dict(), model_path)
+
+            # Remove the last saved model if it exists
+            if last_saved_model_path is not None:
+                if os.path.exists(last_saved_model_path):
+                    os.remove(last_saved_model_path)
+                    print(f"Removed previous model {last_saved_model_path}")
+
+            last_saved_model_path = model_path
         
 
 def train_one_epoch(training_dataloader):
