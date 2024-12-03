@@ -18,13 +18,17 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
     training_loss = []
     validation_loss = []
+    training_accuracy = []
+    validation_accuracy = []
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
         model.train()
-        avg_loss = train_one_epoch(training_dataloader)
+        avg_loss, avg_acc = train_one_epoch(training_dataloader)
 
         running_loss = 0.0
+        correct_preds = 0
+        total_preds = 0
 
         model.eval()
 
@@ -39,13 +43,20 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
                 vloss = criterion(voutputs, vlabels)
 
                 running_loss += vloss.item()
+
+                prediction = torch.sigmoid(voutputs) > 0.5
+                correct_preds += (prediction == vlabels).sum().item()
+                total_preds += vlabels.numel()
         
         avg_vloss = running_loss / (i+1)
+        avg_vacc = correct_preds / total_preds
 
-        print(f"Validation Loss: {avg_vloss}, Training Loss: {avg_loss}")
+        print(f"Validation Loss: {avg_vloss:.4f}, Training Loss: {avg_loss:.4f}, Validation Accuracy: {avg_vacc:.4f}, Training Accuracy: {avg_acc:.4f}")
         # print(f"predicted: {voutputs}, sigmoid : {torch.sigmoid(voutputs)}, actual: {vlabels}")
         training_loss.append(avg_loss)
         validation_loss.append(avg_vloss)
+        training_accuracy.append(avg_acc)
+        validation_accuracy.append(avg_vacc)
 
         if avg_vloss < best_loss:
             best_loss = avg_vloss
@@ -65,18 +76,33 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
     import matplotlib.pyplot as plt
 
+    plt.figure(figsize=(12, 5))
+
+    # Plot Loss
+    plt.subplot(1, 2, 1)
     plt.plot(training_loss, label="Training Loss")
     plt.plot(validation_loss, label="Validation Loss")
     plt.xlabel("Epoch")
     plt.ylabel(f"Loss ({criterion.__class__.__name__})")
     plt.legend()
-    plt.title("Training the CNN")
+    plt.title("Training and Validation Loss")
+
+    # Plot Accuracy
+    plt.subplot(1, 2, 2)
+    plt.plot(training_accuracy, label="Training Accuracy")
+    plt.plot(validation_accuracy, label="Validation Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.title("Training and Validation Accuracy")
+
     plt.show()
         
 
 def train_one_epoch(training_dataloader):
     running_loss = 0.0
-    last_loss = 0.0
+    correct_preds = 0
+    total_preds = 0
 
     for i, data in enumerate(training_dataloader):
         inputs_image, inputs_color, inputs_speed, labels = data
@@ -92,13 +118,15 @@ def train_one_epoch(training_dataloader):
         optimizer.step()
 
         running_loss += loss.item()
-        
-        if i % 100 == 99:
-            last_loss = running_loss / 100
-            running_loss = 0.0
-            print(f" Batch {i + 1}, Loss: {last_loss}")
 
-    return last_loss
+        prediction = torch.sigmoid(outputs) > 0.5
+        correct_preds += (prediction == vlabels).sum().item()
+        total_preds += vlabels.numel()
+    
+    avg_loss = running_loss / (i+1)
+    avg_acc = correct_preds / total_preds
+
+    return avg_loss, avg_acc
 
 if __name__ == "__main__":
 
@@ -110,7 +138,7 @@ if __name__ == "__main__":
     model.to(device)
 
     print("Loading data...")
-    dataset = CustomDataset("./data", transform=preprocess)
+    dataset = CustomDataset("./data", transform_image=preprocess)
     training_size = int(0.8 * len(dataset))
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
