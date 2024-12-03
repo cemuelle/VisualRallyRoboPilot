@@ -19,9 +19,9 @@ import torch.nn as nn
 onlyOnce = True
 
 # parameters
-RANDOMIZATION_RANGE = 10
+RANDOMIZATION_RANGE = 8
 MAX_DURATION = 5
-N_ITERATIONS = 5
+N_ITERATIONS = 3
 GATE_WIDTH = 5
 PORT = 7654
 OUTPUT_DIR = "out"
@@ -46,7 +46,8 @@ class ExampleNNMsgProcessor:
         self.always_forward = True
         self.model = MLP()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.load_state_dict(torch.load("models/MLP_model.pth", weights_only=True))
+        #self.model.load_state_dict(torch.load("models/MLP_model.pth", weights_only=True))
+        self.model.load_state_dict(torch.load("models/model_15.pth", weights_only=True))
         self.model.to(self.device)
         self.model.eval()
 
@@ -65,11 +66,31 @@ class ExampleNNMsgProcessor:
 
         car_speed = message.car_speed
 
-        if not forward and not backward and abs(car_speed) < 0.3:
+        #if not forward and not backward and abs(car_speed) < 0.3:
+        if not forward and not backward and abs(car_speed) < 2:
             if car_speed < 0:
                 backward = True
             else:
                 forward = True
+
+        if forward and backward:
+            forward = formatted_output[0] > formatted_output[1]
+            backward = not forward
+        if left and right:
+            left = formatted_output[2] > formatted_output[3]
+            right = not left
+ 
+        # # make sure the car isn't moving too fast
+        if car_speed > 20:
+            forward = False
+            backward = True
+ 
+        # if message.raycast_distances[7] < 50 and car_speed > 30:
+        #     forward = False
+        #     backward = True
+        if message.raycast_distances[7] > 10 and car_speed < -2:
+            forward = True
+            backward = False
 
         return [
             ("forward", forward),
@@ -82,7 +103,7 @@ class ExampleNNMsgProcessor:
 
     
 
-    def process_message(self, message, data_collector, max_infer_time=15):
+    def process_message(self, message, data_collector, max_infer_time=30):
         """
         Processes a message and controls the simulation with a running elapsed time counter.
         
@@ -106,6 +127,8 @@ class ExampleNNMsgProcessor:
             print(f"Elapsed time exceeded {max_infer_time} seconds. Restarting simulation.")
             data_collector.network_interface.disconnect()
             print("Simulation disconnected due to timeout.")
+            data_collector.recorded_data = []
+            print("Control set to 0")
             return
 
         # Check if the car has passed through the gate and collected enough data
@@ -158,8 +181,8 @@ def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position, 
         data_window.network_interface.disconnect()
 
 # Load gate configurations from JSON file
-with open("gates_simple_track.json", "r") as file:
-    gate_configurations = json.load(file)["gate_position_simple"]
+with open("gatesSH.json", "r") as file:
+    gate_configurations = json.load(file)["gate_slightly_harder"]
 
 #allPods = get_pods()
 #print(allPods)
@@ -200,7 +223,7 @@ for idx, gate_config in enumerate(gate_configurations):
         iteration_dir = os.path.join(context_dir, f"iteration_{iteration}")
 
         # Generate multiple individuals for the gate
-        for individual_idx in range(10):  # Adjusted for 10 individuals per gate
+        for individual_idx in range(2):  # Adjusted for 10 individuals per gate
             time.sleep(0.9)  # Delay for the socket to be free again
 
             # Verify that initial_position is not modified
@@ -214,9 +237,11 @@ for idx, gate_config in enumerate(gate_configurations):
             # Format control data
             control_data = [tuple(snapshot.current_controls) for snapshot in recorded_data]
 
-            # Save data
-            individual_name = f"individual_{individual_idx}"
-            save_individual_data(iteration_dir, individual_name, initial_context, control_data)
+            if control_data:
+                individual_name = f"individual_{individual_idx}"
+                save_individual_data(iteration_dir, individual_name, initial_context, control_data)
+            else:
+                print(f"Skipping saving for individual {individual_idx} due to empty control data.")
 
 
 
