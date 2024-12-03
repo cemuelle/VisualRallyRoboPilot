@@ -42,7 +42,7 @@
             "texture": "assets/VisualTrack_red/IntersectionGeneralTex. png"
         },
         {
-            "model": "assets/VisualTrack_red/untitled.obj"            
+            "model": "assets/VisualTrack_red/untitled.obj"               
         }
     ],
     "trajectories" : "assets/VisualTrack_red/intersection.traj"
