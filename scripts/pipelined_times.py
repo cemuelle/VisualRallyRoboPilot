@@ -19,6 +19,7 @@ import torch.nn as nn
 onlyOnce = True
 
 # parameters
+INDIVI_NUMBER = 2
 RANDOMIZATION_RANGE = 8
 MAX_DURATION = 5
 N_ITERATIONS = 3
@@ -221,9 +222,9 @@ for idx, gate_config in enumerate(gate_configurations):
         # Directory for the current gate context and iteration
         context_dir = os.path.join(OUTPUT_DIR, f"context_{idx}")
         iteration_dir = os.path.join(context_dir, f"iteration_{iteration}")
-
+        saved_individuals = 0
         # Generate multiple individuals for the gate
-        for individual_idx in range(2):  # Adjusted for 10 individuals per gate
+        while saved_individuals < INDIVI_NUMBER:  # Adjusted for 10 individuals per gate
             time.sleep(0.9)  # Delay for the socket to be free again
 
             # Verify that initial_position is not modified
@@ -232,16 +233,17 @@ for idx, gate_config in enumerate(gate_configurations):
             recorded_data = get_mlp_path(position_to_use, initial_angle, initial_speed, gate_position, "127.0.0.1")
 
             # Print position to verify consistency
-            print(f"Position during individual {individual_idx} generation:", position_to_use)
+            print(f"Position during individual {saved_individuals} generation:", position_to_use)
 
             # Format control data
             control_data = [tuple(snapshot.current_controls) for snapshot in recorded_data]
 
             if control_data:
-                individual_name = f"individual_{individual_idx}"
+                individual_name = f"individual_{saved_individuals}"
                 save_individual_data(iteration_dir, individual_name, initial_context, control_data)
+                saved_individuals += 1
             else:
-                print(f"Skipping saving for individual {individual_idx} due to empty control data.")
+                print(f"Skipping saving for individual {saved_individuals} due to empty control data.")
 
 
 
