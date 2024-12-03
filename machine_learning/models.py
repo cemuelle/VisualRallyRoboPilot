@@ -7,15 +7,21 @@ class AlexNetPerso(nn.Module):
         dropout = 0.5
 
         self.use_speed = False
+        self.use_color = False
 
         if self.use_speed:
             self.speed_size = 1
         else:
             self.speed_size = 0
 
+        if self.use_color:
+            self.color_size = 4
+        else:
+            self.color_size = 3
+
         # Convolutional layers
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 12, kernel_size=5, stride=2),
+            nn.Conv2d(self.color_size, 12, kernel_size=5, stride=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(12, 24, kernel_size=5, stride=2),
@@ -46,7 +52,7 @@ class AlexNetPerso(nn.Module):
             nn.Dropout(p=dropout),
         )
 
-    def forward(self, image, route_color, speed):
+    def forward(self, image, speed):
         image = self.conv_layers(image)
         image = self.avgpool(image)
 
@@ -56,7 +62,6 @@ class AlexNetPerso(nn.Module):
             features = torch.cat((image, speed), dim=1)
         else:
             features = image
-
         image = self.fc_layers(features)
         
         return image

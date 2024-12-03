@@ -9,10 +9,10 @@ from machine_learning.preprocessing import preprocess
 
 from data_collector import DataCollectionUI
 
-from machine_learning.utils import colToRgb
+from machine_learning.utils import colToRgb, get_most_recent_model
+from machine_learning.preprocessing import ColorThresholdTransform
 from rallyrobopilot import *
 from PIL import Image
-from machine_learning.utils import get_most_recent_model
 r"""
 This file is provided as an example of what a simplistic controller could be done.
 It simply uses the DataCollectionUI interface zo receive sensing_messages and send controls.
@@ -35,25 +35,28 @@ model.eval()
 
 output_feature_labels = ['forward', 'backward', 'left', 'right', 'nothing']
 
+color = colToRgb("cyan")
+color_mask = ColorThresholdTransform(color, margin=0.01)
+# color_mask = ColorThresholdTransform(-1, margin=0.01)
+
 
 class VisualNNMsgProcessor:
     def __init__(self):
         self.model = model
 
     def nn_infer(self, message):
-        image = message.image
-        image = Image.fromarray(image)
-        image = preprocess(image)
-        image = image.unsqueeze(0)
+        image = preprocess(Image.fromarray(message.image))
 
-        color = colToRgb("cyan")
-        color = torch.tensor(color).float().unsqueeze(0)
+        if model.use_color:
+            image_color_mask = color_mask(image).unsqueeze(0)
+            image = torch.cat((image, image_color_mask), dim=0).unsqueeze(0)
+        else:
+            image = image.unsqueeze(0)
 
-        speed = message.car_speed
-        speed = torch.tensor(speed).float().unsqueeze(0)
+        speed = torch.tensor(message.car_speed).float().unsqueeze(0)
         
         with torch.no_grad():
-            output = model(image, color, speed)
+            output = model(image, speed)
 
         output = torch.sigmoid(output)
         print("Models output : ", output)

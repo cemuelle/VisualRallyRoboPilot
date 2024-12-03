@@ -34,11 +34,11 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
 
         with torch.no_grad():
             for i, data in enumerate(validation_dataloader):
-                inputs_image, inputs_color, inputs_speed, labels = data
-                vinputs_image, vinputs_color, vinputs_speed, vlabels = inputs_image.to(device), inputs_color.to(device), inputs_speed.to(device), labels.to(device)
+                inputs_image, inputs_speed, labels = data
+                vinputs_image, vinputs_speed, vlabels = inputs_image.to(device), inputs_speed.to(device), labels.to(device)
                 vinputs_speed = vinputs_speed.unsqueeze(1)
 
-                voutputs = model(vinputs_image, vinputs_color, vinputs_speed)
+                voutputs = model(vinputs_image, vinputs_speed)
         
                 vloss = criterion(voutputs, vlabels)
 
@@ -105,13 +105,13 @@ def train_one_epoch(training_dataloader):
     total_preds = 0
 
     for i, data in enumerate(training_dataloader):
-        inputs_image, inputs_color, inputs_speed, labels = data
-        vinputs_image, vinputs_color, vinputs_speed, vlabels = inputs_image.to(device), inputs_color.to(device), inputs_speed.to(device), labels.to(device)
+        inputs_image, inputs_speed, labels = data
+        vinputs_image, vinputs_speed, vlabels = inputs_image.to(device), inputs_speed.to(device), labels.to(device)
         vinputs_speed = vinputs_speed.unsqueeze(1)
 
         optimizer.zero_grad()
 
-        outputs = model(vinputs_image, vinputs_color, vinputs_speed)
+        outputs = model(vinputs_image , vinputs_speed)
         loss = criterion(outputs, vlabels)
         loss.backward()
 

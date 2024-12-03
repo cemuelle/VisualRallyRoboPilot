@@ -2,18 +2,23 @@ import os
 import pickle
 import lzma
 import numpy as np
-from machine_learning.preprocessing import preprocess
+from machine_learning.preprocessing import ColorThresholdTransform
 from PIL import Image
 from torch.utils.data import Dataset
 import torch
 
+from machine_learning.models import AlexNetPerso
+
+model = AlexNetPerso(4)
+
+
 class CustomDataset(Dataset):
-    def __init__(self, folder_path, transform=None):
+    def __init__(self, folder_path, transform_image=None):
         self.inputs_image = []
-        self.inputs_color = []
+        # self.inputs_color = []
         self.inputs_speed = []
         self.targets = []
-        self.transform = transform
+        self.transform_image = transform_image
         self.number_of_samples = 0
         self.load_data(folder_path)
 
@@ -28,21 +33,37 @@ class CustomDataset(Dataset):
                             data = pickle.load(f)
                             self.number_of_samples += 2 * len(data)
                             for x in data:
+                                color_mask = ColorThresholdTransform(colToRgb(subfolder_name), margin=0.01)
                                 image = Image.fromarray(x.image)
-                                if self.transform:
-                                    image = self.transform(image)
+                                if self.transform_image:
+                                    image = self.transform_image(image)
+                                
+                                if model.use_color:
+                                    image_color_mask = color_mask(image).unsqueeze(0)
+                                    augmented_image = torch.cat((image, image_color_mask), dim=0)
+                                else:
+                                    augmented_image = image
+
                                 self.inputs_speed.append(x.car_speed)
-                                self.inputs_image.append(image)
-                                self.inputs_color.append(colToRgb(subfolder_name))
+                                self.inputs_image.append(augmented_image)
+                                # self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append(list(x.current_controls))
                                 
                                 # Add symmetric data
                                 flipped_image = Image.fromarray(np.fliplr(x.image))
-                                if self.transform:
-                                    flipped_image = self.transform(flipped_image)
+                                if self.transform_image:
+                                    flipped_image = self.transform_image(flipped_image)
+
+                                if model.use_color:
+                                    image_color_mask = color_mask(flipped_image).unsqueeze(0)
+                                    augmented_image = torch.cat((flipped_image, image_color_mask), dim=0)
+                                else:
+                                    augmented_image = flipped_image
+
                                 self.inputs_speed.append(x.car_speed)
-                                self.inputs_image.append(flipped_image)
-                                self.inputs_color.append(colToRgb(subfolder_name))
+                                self.inputs_image.append(augmented_image)
+
+                                # self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append([x.current_controls[0], x.current_controls[1], x.current_controls[3], x.current_controls[2]])
                     except Exception as e:
                         print(f"Error loading data from {file_path} due to {e}")
@@ -53,7 +74,7 @@ class CustomDataset(Dataset):
         return len(self.inputs_image)
 
     def __getitem__(self, idx):
-        return self.inputs_image[idx], torch.tensor(self.inputs_color[idx], dtype=torch.float32), torch.tensor(self.inputs_speed[idx], dtype=torch.float32), torch.tensor(self.targets[idx], dtype=torch.float32)
+        return self.inputs_image[idx], torch.tensor(self.inputs_speed[idx], dtype=torch.float32), torch.tensor(self.targets[idx], dtype=torch.float32)
     
     def get_distribution(self):
         # get how many samples of each class
@@ -91,8 +112,8 @@ def colToRgb(colorName):
             return [0,255,255]
         case "blue":
             return [0,0,255]
-        case default:
-            return [0,0,0]
+        case "none" | _:
+            return -1
         
 def get_most_recent_model(models_folder):
     # Get all files in the models folder

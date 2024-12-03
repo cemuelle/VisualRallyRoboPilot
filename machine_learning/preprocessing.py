@@ -19,16 +19,40 @@ greyscale = transforms.Compose([
 
 class ColorThresholdTransform:
     def __init__(self, target_color, margin=0.01):
-        self.target_color = torch.tensor(target_color, dtype=torch.float32).view(3, 1, 1)
-        self.target_color /= 255.0
+        """
+        Args:
+            target_color (tuple): RGB color to threshold
+            margin (float): Margin of error for the threshold
+        """
+        self.setColor(target_color)
         self.margin = margin
 
+    def setColor(self, target_color):
+        """
+        Args:
+            target_color (tuple): RGB color to threshold
+        """
+        if target_color == -1:
+            self.target_color = None
+        else:
+            self.target_color = torch.tensor(target_color, dtype=torch.float32).view(3, 1, 1)
+            self.target_color /= 255.0
+
     def __call__(self, img):
+        """
+        Args:
+            img (PIL.Image.Image): Image to threshold
+        Returns:
+            torch.Tensor: Binary mask of the image
+        """
         if isinstance(img, Image.Image):
             img = transforms.ToTensor()(img)
 
         if img.shape[0] != 3:
             raise ValueError("Input image must be RGB")
+        
+        if self.target_color is None:
+            return torch.zeros(img.shape[1], img.shape[2], dtype=torch.bool)
         
         distance_per_channel = torch.abs(img - self.target_color)
 
@@ -50,7 +74,8 @@ if __name__ == "__main__":
             # plt.imshow(data[0].image)
             # plt.show()
             target_color = torch.tensor([255.0, 0.0, 0.0])
-            transform = ColorThresholdTransform(target_color, margin=0.01)
+            transform = ColorThresholdTransform(-1, margin=0.01)
+            # transform = ColorThresholdTransform(target_color, margin=0.01)
             image = Image.fromarray(data[0].image)
             mask = transform(image)
             plt.imshow(mask)
