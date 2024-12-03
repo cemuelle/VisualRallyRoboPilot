@@ -19,7 +19,7 @@ import torch.nn as nn
 onlyOnce = True
 
 # parameters
-INDIVI_NUMBER = 2
+INDIVI_NUMBER = 10
 RANDOMIZATION_RANGE = 8
 MAX_DURATION = 5
 N_ITERATIONS = 3
