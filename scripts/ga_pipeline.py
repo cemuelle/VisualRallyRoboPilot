@@ -185,6 +185,33 @@ def elitism(pop, elitism_count):
     # print("elites: ", elites, "\n")
     return elites
 
+def populate(elites, population_size, elitism_count):
+    """
+    Creates a population by replicating the elite individual.
+
+    Parameters:
+        elite (tuple): A tuple of the form (name, controls, fitness), where:
+            - name (str): Identifier for the individual.
+            - controls (list): List of control values for the individual.
+            - fitness (float): Fitness score of the individual.
+        population_size (int): Number of individuals to generate.
+
+    Returns:
+        list: A list of replicated individuals, each structured as (name, controls, fitness).
+    """
+    populated = []
+
+    # Ensure we populate the population until the desired size is met
+    while len(populated) < population_size - elitism_count:
+        for elite in elites:
+            if len(populated) < population_size:
+                # Append a copy of the elite individual
+                populated.append(elite)
+
+    # Print the final population for verification
+    print("Population:", populated)
+    return populated
+
 def crossover(parent1, parent2):
     """
     Perform crossover between two parents by randomly choosing control elements from each parent.
@@ -427,7 +454,7 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         print(f"\nGeneration {gen + 1}:")
         individual_with_scores = add_fitness(individual_controls,game_ips)
         print(f"Fitness done {gen + 1}")
-        # Step 0: Graphs Speed avg
+        # Step 0: store the best of the generation
         speeds = [individual[2] for individual in individual_with_scores]
         avg_speed = sum(speeds) / len(speeds) if speeds else 0
         generation_data.append((gen + 1, avg_speed))
@@ -435,10 +462,13 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         elite = elitism(individual_with_scores, elitism_count)
         print(f"Elitism done {gen + 1}")
         # Step 2: Create the next generation using crossover
-        crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
-        print(f"crossover done {gen + 1}")
+        #crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
+        #print(f"crossover done {gen + 1}")
+        elite_pop = populate(elite, population_size, elitism_count)
         # Step 3: Mutate the crossed population
-        mutated_pop = mutate_population(crossed_pop, mutation_rate)
+        
+        mutated_pop = mutate_population(elite_pop, mutation_rate)
+        print("size of mutated pop", len(mutated_pop))
         print(f"mutated_pop {gen + 1}")
         popi = preprocess_population(mutated_pop)
         # Step 4: Add the elite individuals to the mutated population
@@ -454,9 +484,10 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         '''
         #print("\n")
         #print(individual_controls)
+        print("final gen size ", len(next_generation))
         print(f"ready for gen {gen + 2}")
-    # Plot average speed across generations
-    #graph_speed_over_generations(generation_data)
+
+
     strappedElites = []
     for i in elite:
         strappedElites.append(i[1])
