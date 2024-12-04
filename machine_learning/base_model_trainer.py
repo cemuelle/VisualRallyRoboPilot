@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, random_split
 
 import os
 
-def trainer(model, training_dataloader, validation_dataloader, num_epochs):
+def trainer(model, training_dataloader, validation_dataloader, num_epochs, criterion=nn.BCEWithLogitsLoss()):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     epoch_number = 0
 
@@ -24,7 +24,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
         model.train()
-        avg_loss, avg_acc = train_one_epoch(training_dataloader)
+        avg_loss, avg_acc = train_one_epoch(training_dataloader, criterion)
 
         running_loss = 0.0
         correct_preds = 0
@@ -47,8 +47,8 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
                 prediction = torch.sigmoid(voutputs) > 0.5
                 correct_preds += (prediction == vlabels).sum().item()
                 total_preds += vlabels.numel()
-        
-        avg_vloss = running_loss / (i+1)
+
+        avg_vloss = running_loss / len(validation_dataloader)
         avg_vacc = correct_preds / total_preds
 
         print(f"Validation Loss: {avg_vloss:.4f}, Training Loss: {avg_loss:.4f}, Validation Accuracy: {avg_vacc:.4f}, Training Accuracy: {avg_acc:.4f}")
@@ -99,7 +99,7 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs):
     plt.show()
         
 
-def train_one_epoch(training_dataloader):
+def train_one_epoch(training_dataloader, criterion):
     running_loss = 0.0
     correct_preds = 0
     total_preds = 0
@@ -123,7 +123,7 @@ def train_one_epoch(training_dataloader):
         correct_preds += (prediction == vlabels).sum().item()
         total_preds += vlabels.numel()
     
-    avg_loss = running_loss / (i+1)
+    avg_loss = running_loss / len(training_dataloader)  
     avg_acc = correct_preds / total_preds
 
     return avg_loss, avg_acc
@@ -156,4 +156,4 @@ if __name__ == "__main__":
     class_weights = torch.tensor(pos_weight).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
 
-    trainer(model, training_dataloader, validation_dataloader, 100)
+    trainer(model, training_dataloader, validation_dataloader, 100, criterion=criterion)
