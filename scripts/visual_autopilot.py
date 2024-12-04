@@ -25,7 +25,7 @@ Be warned that this could also cause crash on the client side if socket sending 
 """
 
 model_path = get_most_recent_model("./models")
-# model_path = "./models/model_20241202_151824_43.pth"
+# model_path = "./models/model_20241204_164435_64.pth"
 print(f"Loading model from {model_path}")
 model_dict = torch.load(model_path, weights_only=True)
 
@@ -35,20 +35,21 @@ model.eval()
 
 output_feature_labels = ['forward', 'backward', 'left', 'right', 'nothing']
 
-color = colToRgb("cyan")
+color = colToRgb("red")
+print(f"Color : {color}")
 color_mask = ColorThresholdTransform(color, margin=0.01)
 # color_mask = ColorThresholdTransform(-1, margin=0.01)
-
 
 class VisualNNMsgProcessor:
     def __init__(self):
         self.model = model
 
     def nn_infer(self, message):
+        img = Image.fromarray(message.image)
         image = preprocess(Image.fromarray(message.image))
 
         if model.use_color:
-            image_color_mask = color_mask(image).unsqueeze(0)
+            image_color_mask = color_mask(img).unsqueeze(0)
             image = torch.cat((image, image_color_mask), dim=0).unsqueeze(0)
         else:
             image = image.unsqueeze(0)
