@@ -1,0 +1,10 @@
+{
+  "gateVisual": [
+    {
+      "p1_gate": [225, 130],
+      "p2_gate": [232, 106],
+      "start_position": [0, 0, 0],
+      "start_orientation": -90
+    }
+  ]
+}
