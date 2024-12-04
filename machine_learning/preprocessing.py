@@ -2,23 +2,27 @@ import torchvision.transforms as transforms
 import torch
 from PIL import Image
 
-preprocess = transforms.Compose([
+import matplotlib.pyplot as plt
+resize = transforms.Compose([
     transforms.Resize(224),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
+])
+
+preprocess = transforms.Compose([
+    transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.0)),
+    resize,
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 greyscale = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
-    transforms.Resize(224),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
+    resize,
     transforms.Normalize(mean=[0.5], std=[0.5]),
 ])
 
 class ColorThresholdTransform:
-    def __init__(self, target_color, margin=0.01):
+    def __init__(self, target_color=None, margin=0.01):
         """
         Args:
             target_color (tuple): RGB color to threshold
@@ -32,7 +36,7 @@ class ColorThresholdTransform:
         Args:
             target_color (tuple): RGB color to threshold
         """
-        if target_color == -1:
+        if target_color is None or (isinstance(target_color, (list, tuple)) and target_color == -1):
             self.target_color = None
         else:
             self.target_color = torch.tensor(target_color, dtype=torch.float32).view(3, 1, 1)
@@ -46,20 +50,15 @@ class ColorThresholdTransform:
             torch.Tensor: Binary mask of the image
         """
         if isinstance(img, Image.Image):
-            img = transforms.ToTensor()(img)
+            img = resize(img)
 
         if img.shape[0] != 3:
             raise ValueError("Input image must be RGB")
         
         if self.target_color is None:
             return torch.zeros(img.shape[1], img.shape[2], dtype=torch.bool)
-        
-        distance_per_channel = torch.abs(img - self.target_color)
 
-        total_distance = distance_per_channel.sum(dim=0)
-
-        return total_distance < self.margin
-        
+        return torch.abs(img - self.target_color).sum(dim=0) < self.margin
 
 if __name__ == "__main__":
 

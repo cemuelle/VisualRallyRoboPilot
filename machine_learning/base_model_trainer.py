@@ -3,7 +3,7 @@ from utils import *
 import torch.nn as nn
 from datetime import datetime
 from models import AlexNetPerso
-from preprocessing import preprocess
+from preprocessing import preprocess, greyscale
 from torch.utils.data import DataLoader, random_split
 
 import os
@@ -138,7 +138,13 @@ if __name__ == "__main__":
     model.to(device)
 
     print("Loading data...")
-    dataset = CustomDataset("./data", transform_image=preprocess)
+
+    if model.use_grayscale:
+        transform_image = greyscale
+    else:
+        transform_image = preprocess
+
+    dataset = CustomDataset("./data", transform_image=transform_image)
     training_size = int(0.8 * len(dataset))
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])

@@ -7,17 +7,22 @@ class AlexNetPerso(nn.Module):
         dropout = 0.5
 
         self.use_speed = False
-        self.use_color = False
+
+        self.use_color = True
+        self.use_grayscale = False
 
         if self.use_speed:
             self.speed_size = 1
         else:
             self.speed_size = 0
 
-        if self.use_color:
-            self.color_size = 4
+        if self.use_grayscale:
+            self.color_size = 1
         else:
             self.color_size = 3
+
+        if self.use_color:
+            self.color_size += 1
 
         # Convolutional layers
         self.conv_layers = nn.Sequential(

@@ -11,6 +11,20 @@ from machine_learning.models import AlexNetPerso
 
 model = AlexNetPerso(4)
 
+import matplotlib.pyplot as plt
+def plot_image(image_transf):
+    if isinstance(image_transf, Image.Image):
+        plt.imshow(image_transf)
+    elif isinstance(image_transf, torch.Tensor):
+        if image_transf.shape[0] == 1:  # Grayscale image
+            image_transf = image_transf.squeeze(0)  # Remove the channel dimension
+            plt.imshow(image_transf, cmap='gray')
+        else:  # RGB image
+            plt.imshow(image_transf)
+
+    # plt.axis('off')  # Hide the axis
+    plt.show()
+
 
 class CustomDataset(Dataset):
     def __init__(self, folder_path, transform_image=None):
@@ -36,34 +50,38 @@ class CustomDataset(Dataset):
                                 color_mask = ColorThresholdTransform(colToRgb(subfolder_name), margin=0.01)
                                 image = Image.fromarray(x.image)
                                 if self.transform_image:
-                                    image = self.transform_image(image)
+                                    image_transf = self.transform_image(image)
+                                else:
+                                    image_transf = image
                                 
                                 if model.use_color:
                                     image_color_mask = color_mask(image).unsqueeze(0)
-                                    augmented_image = torch.cat((image, image_color_mask), dim=0)
+                                    # plot_image(image_color_mask)
+                                    augmented_image = torch.cat((image_transf, image_color_mask), dim=0)
                                 else:
-                                    augmented_image = image
+                                    augmented_image = image_transf
 
                                 self.inputs_speed.append(x.car_speed)
                                 self.inputs_image.append(augmented_image)
-                                # self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append(list(x.current_controls))
                                 
                                 # Add symmetric data
                                 flipped_image = Image.fromarray(np.fliplr(x.image))
                                 if self.transform_image:
-                                    flipped_image = self.transform_image(flipped_image)
+                                    image_transf_flipped = self.transform_image(flipped_image)
+                                else:
+                                    image_transf_flipped = flipped_image
 
                                 if model.use_color:
                                     image_color_mask = color_mask(flipped_image).unsqueeze(0)
-                                    augmented_image = torch.cat((flipped_image, image_color_mask), dim=0)
+                                    # plot_image(image_color_mask)
+                                    augmented_image = torch.cat((image_transf_flipped, image_color_mask), dim=0)
                                 else:
-                                    augmented_image = flipped_image
+                                    augmented_image = image_transf_flipped
 
                                 self.inputs_speed.append(x.car_speed)
                                 self.inputs_image.append(augmented_image)
 
-                                # self.inputs_color.append(colToRgb(subfolder_name))
                                 self.targets.append([x.current_controls[0], x.current_controls[1], x.current_controls[3], x.current_controls[2]])
                     except Exception as e:
                         print(f"Error loading data from {file_path} due to {e}")
