@@ -88,7 +88,7 @@ def simulate_car_movement(car_position, gate_position, list_controls, car_contro
     
 
 
-def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, deltaT=0.1, timeout=30):
+def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, deltaT=0.1, timeout=60):
     """
     Send a simulation request to the server and calculate the number of deltaT intervals 
     required for the car to arrive at the gate.
