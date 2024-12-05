@@ -11,8 +11,8 @@ class Gate:
     thickness: The thickness of the gate.
     """
     def __init__(self, gate_p1=None, gate_p2=None, thickness=5):
-        self.gate_p1 = gate_p1 
-        self.gate_p2 = gate_p2 
+        self.gate_p1 = gate_p1
+        self.gate_p2 = gate_p2
         self.thickness = thickness
 
     """
