@@ -167,26 +167,34 @@ def nControls(ind):
 
     return a,w,s,d
 
+
+""" THIS TAKES ALL INDIVIDUAL, SORT THEM BY FITNESS SCORE, AND TAKE THE LOWEST DELTA AS ELITE"""
 def elitism(pop, elitism_count):
     elites = []
-        # Select top elite_count individuals from the sorted population (from individual_with_scores)
     sorted_pop = sorted(pop, key=lambda x: x[2], reverse=False)
 
     for i in range(min(elitism_count, len(sorted_pop))):
+        
         individual_id, controls, fitness = sorted_pop[i]
 
-        # Create the same structure as the child individuals (name, controls)
         elites.append((individual_id,controls,fitness))
 
-    for i in range(elitism_count):
+    """ CONSOLE CONTROL """
+    """for i in range(elitism_count):
         print("la fine equipe: ")
         print("   ", i, ": ")
         print(elites[i][2])
         print(nControls(elites[i]))
-        print(elites[i][1])
-    # print("elites: ", elites, "\n")
+        print(elites[i][1])"""
+    
+    """ RETURN X NUMBER OF ELITES """
     return elites
 
+""" HERE WE REPOPULATE BY SELECTING ONLY THE ELITE, 
+    THIS ALLOWS US TO REMOVE COMPLETELY FAILED INDIVIDUAL 
+     WHICH FAILED THE SIMULATION PROCESS 
+     SINCE WE CANNOT CONTROL THE TIMING OF THE SIMULATION
+         """
 def populate(elites, population_size, elitism_count):
     """
     Creates a population by replicating the elite individual.
@@ -203,28 +211,36 @@ def populate(elites, population_size, elitism_count):
     """
     populated = []
 
-    # Ensure we populate the population until the desired size is met
+    """ THIS WILL ADD ONLY ELITE INTO THE NEXT GENERATION """
     while len(populated) < population_size - elitism_count:
         for elite in elites:
             if len(populated) < population_size:
                 # Append a copy of the elite individual
                 populated.append(elite)
 
-    # Print the final population for verification
-    print("Population:", populated)
+    """ CONSOLE CONTROL """
+    #print("Population:", populated)
     return populated
 
+
+"""  THE CROSS OVER """
+
+""" IT WAS REMOVED BECAUSE WE COULDNT NOT ENSURE THAT 
+    TWO INDIVIDUAL WERE AT THE SAME POINT IN THE TRAJECTORY
+    THUS BEING COUNTER PRODUCTIVE FOR THE EXPLOITATION AND EXPLORATION"""
+
+"""
 def crossover(parent1, parent2):
-    """
-    Perform crossover between two parents by randomly choosing control elements from each parent.
+    
+    #Perform crossover between two parents by randomly choosing control elements from each parent.
 
-    Parameters:
-    - parent1: List of control tuples for the first parent.
-    - parent2: List of control tuples for the second parent.
+    #Parameters:
+    #- parent1: List of control tuples for the first parent.
+    #- parent2: List of control tuples for the second parent.
 
-    Returns:
-    - child: New child created by selecting control elements from parent1 and parent2.
-    """
+    #Returns:
+    #- child: New child created by selecting control elements from parent1 and parent2.
+    
     child = []
 
     for c1, c2 in zip(parent1, parent2):
@@ -261,7 +277,11 @@ def add_crossover_pop(pop, population_size=20, elite_count=4):
         new_pop.append(('child_' + str(len(new_pop) + 1), child_controls))
 
     return new_pop
+"""
 
+
+""" THIS MUTATION WILL ALLOW EXPLORATION SINCE IT 
+    WILL EXPLORE ALL POSSIBILITIES OF CONTROLS EQUALLY"""
 def mutate(individual, mutation_rate):
     """
     Mutate the individual's controls based on the mutation_rate.
@@ -392,6 +412,15 @@ def mutateRandomSmooth(individual, mutation_rate):
     """
     return smoothingTemplate(individual, mutation_rate, [random.randrange(-1, 2),random.randrange(-1, 2),random.randrange(-1, 2),random.randrange(-1, 2)])
 
+""" BASED ON 4 DIFFERENT MUTATION FUNCTIONS 
+    WE RANDOMLY CHOOSE A MUTATION AND APPLY 
+    TO THE INDIVIDUAL CONTROLS
+    
+    OUR ELITES ARE THEREFORE SLIGHTLY DIFFERENT 
+    FROM EACH OTHER.
+    
+    OUR ELITES HAVING ALREADY EXPLORED THE TRAJECTORY
+    OUR MUTATION WILL HELP FOR THE EXPLOTATION """
 
 def mutate_population(population, mutation_rate):
     """
@@ -419,6 +448,8 @@ def mutate_population(population, mutation_rate):
 
     return mutated_population
 
+""" THIS ENSURE DATA FORMAT STAYS CONSISTENT """
+# COULD BE OVERKILL
 def preprocess_population(population):
     processed = []
     for individual in population:
@@ -428,6 +459,7 @@ def preprocess_population(population):
             processed.append(individual)
     return processed
 
+""" THIS GRAPHS THE SPEED OF EACH GENERATIONS """
 def graph_speed_over_generations(generation_data):
     """
     Plots the average speed across generations.
