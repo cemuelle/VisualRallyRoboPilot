@@ -2,7 +2,7 @@
 from ursina import *
 import socket
 import numpy as np
-from ga.gate import Gate
+from gate import Gate
 import time
 
 from flask import Flask, request, jsonify
