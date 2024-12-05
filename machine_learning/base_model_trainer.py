@@ -89,6 +89,7 @@ def validation_one_epoch(model, device, test_loader, criterion):
     with torch.no_grad():
         for image, speed, target in test_loader:
             image, speed, target = image.to(device), speed.to(device), target.to(device)
+            speed = speed.unsqueeze(1)
             output = model(image, speed)
 
             test_loss += criterion(output, target)
