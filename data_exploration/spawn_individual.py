@@ -19,10 +19,10 @@ import torch.nn as nn
 onlyOnce = True
 
 # parameters
-INDIVI_NUMBER = 10
+INDIVI_NUMBER = 1
 RANDOMIZATION_RANGE = 2
 MAX_DURATION = 5
-N_ITERATIONS = 5
+N_ITERATIONS = 1
 GATE_WIDTH = 5
 PORT = 7654
 OUTPUT_DIR = "out_blue"
@@ -197,7 +197,7 @@ def get_mlp_path(initial_position, initial_angle, initial_speed, gate_position, 
 
 """ LOAD THE GATES OF A TRACK"""
 
-with open("gatesdream.json", "r") as file:
+with open("gates/gatesdream.json", "r") as file:
     gate_configurations = json.load(file)["gate_positions_blue"]
 
 
