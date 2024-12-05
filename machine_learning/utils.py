@@ -98,7 +98,7 @@ class CustomDataset(Dataset):
         # get how many samples of each class
         return np.sum(np.array(self.targets), axis=0)
 
-# used to load data for test
+# used to load data for test if separate folders
 def load_data_single_folder(folder_path):
     inputs = []
     targets = []

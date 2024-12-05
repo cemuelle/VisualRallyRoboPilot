@@ -19,14 +19,22 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs, crite
     training_accuracy = []
     validation_accuracy = []
 
+    lr = scheduler.get_last_lr()
+
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}")
         
+        # Train the model
         avg_loss, avg_acc = train_one_epoch(model, device, training_dataloader, criterion, optimizer)
+        # Validate the model
         avg_vloss, avg_vacc = validation_one_epoch(model, device, validation_dataloader, criterion)
 
+        # Update the learning rate
         if scheduler is not None:
             scheduler.step(avg_loss)
+            if lr != scheduler.get_last_lr():
+                lr = scheduler.get_last_lr()
+                print(f"Learning rate updated to {lr}")
 
         print(f"Validation Loss: {avg_vloss:.4f}, Training Loss: {avg_loss:.4f}, Validation Accuracy: {avg_vacc:.4f}, Training Accuracy: {avg_acc:.4f}")
         training_loss.append(avg_loss)
@@ -34,8 +42,10 @@ def trainer(model, training_dataloader, validation_dataloader, num_epochs, crite
         training_accuracy.append(avg_acc)
         validation_accuracy.append(avg_vacc)
 
+        # Save the model if it is the best one
         best_loss, last_saved_model_path = save_model(model, timestamp, epoch, avg_vloss, best_loss, last_saved_model_path)
 
+    # Plot the learning curve
     plot_learning_curve(training_loss, validation_loss, training_accuracy, validation_accuracy)
         
 
@@ -61,6 +71,7 @@ def train_one_epoch(model, device, training_dataloader, criterion, optimizer):
 
         running_loss += loss.item()
 
+        # Calculate the accuracy
         prediction = torch.sigmoid(outputs) > 0.5
         correct_preds += (prediction == vlabels).sum().item()
         total_preds += vlabels.numel()
@@ -127,7 +138,7 @@ def plot_learning_curve(training_loss, validation_loss, training_accuracy, valid
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.title("Training and Validation Accuracy")
+    plt.title("Training and Validation Accuracy for each class")
 
     plt.show()
 
@@ -142,12 +153,16 @@ if __name__ == "__main__":
 
     print("Loading data...")
 
+    # Load the transform function wanted by the model
     if model.use_grayscale:
         transform_image = greyscale
     else:
         transform_image = preprocess
 
+    #Load the dataset
     dataset = CustomDataset("./data", transform_image=transform_image)
+
+    # Split the dataset into training and validation
     training_size = int(0.8 * len(dataset))
     validation_size = len(dataset) - training_size
     training_dataset, validation_dataset = random_split(dataset, [training_size, validation_size])
@@ -155,15 +170,18 @@ if __name__ == "__main__":
     training_dataloader = DataLoader(training_dataset, batch_size=8, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=8, shuffle=False)
 
+    # Define the optimizer, scheduler and loss function
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=5)
 
+    # Get the bias according to the distribution of the dataset
     pos_weight = dataset.get_distribution().sum() / dataset.get_distribution()
-    pos_weight[1] = pos_weight[1] * 0.3
+    pos_weight[1] = pos_weight[1] * 0.3 # Reduce the weight of the backward class, because at this end, we don't want to go backward, but only to slow down
 
     print(pos_weight)
     
     class_weights = torch.tensor(pos_weight).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=class_weights)
 
+    # Train the model
     trainer(model=model, training_dataloader=training_dataloader, validation_dataloader=validation_dataloader, num_epochs=100, criterion=criterion, optimizer=optimizer, scheduler=scheduler)

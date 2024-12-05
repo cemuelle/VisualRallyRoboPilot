@@ -6,10 +6,10 @@ class AlexNetPerso(nn.Module):
         super().__init__()
         dropout = 0.5
 
-        self.use_speed = False
+        self.use_speed = True
 
         self.use_color = True
-        self.use_grayscale = False
+        self.use_grayscale = True
 
         if self.use_speed:
             self.speed_size = 1
@@ -26,9 +26,9 @@ class AlexNetPerso(nn.Module):
 
         # Convolutional layers
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(self.color_size, 12, kernel_size=5, stride=2),
+            nn.Conv2d(self.color_size, 12, kernel_size=5, stride=2), # kernel_size is the size of the matrix of the filter, stride is the step of the filter moving between each step
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.MaxPool2d(kernel_size=2, stride=2), # use to reduce the dimension of the image, by taking the max value of the kernel size matrix, and moving the kernel by the stride value
             nn.Conv2d(12, 24, kernel_size=5, stride=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -41,8 +41,8 @@ class AlexNetPerso(nn.Module):
         )
 
         self.avgpool = nn.Sequential(
-            nn.AdaptiveAvgPool2d((6, 6)),
-            nn.Flatten(),
+            nn.AdaptiveAvgPool2d((6, 6)), # use to reduce the dimension of the image to a fixed size
+            nn.Flatten(), # use to flatten the image to a 1D tensor to be passed to fc layers
         )
 
         # Fully connected layers
