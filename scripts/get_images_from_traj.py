@@ -88,7 +88,7 @@ def simulate_car_movement(car_position, gate_position, list_controls, car_contro
     
 
 
-def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, deltaT=0.1, timeout=60):
+def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickness, car_position, car_speed, car_angle, list_controls, deltaT=0.1, file_name="record", timeout=60):
     """
     Send a simulation request to the server and calculate the number of deltaT intervals 
     required for the car to arrive at the gate.
@@ -124,37 +124,147 @@ def send_simulation_request(protocol, server_ip, port, gate_p1, gate_p2, thickne
         "car_speed": car_speed,
         "car_angle": car_angle,
         "list_controls": list_controls,
-        "deltaT": deltaT
+        "deltaT": deltaT,
+        "file_name": file_name
     }
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
         if response.status_code == 200:
             response_data = response.json()
-            status = response_data.get("status", False)
-            steps = response_data.get("steps", -1)  # Expecting the server to return "steps"
-            collisions = response_data.get("collisions", -1)
+            #status = response_data.get("status", False)
+            #steps = response_data.get("steps", -1)  # Expecting the server to return "steps"
+            #collisions = response_data.get("collisions", -1)
             response.close()
-            return True, status, steps, collisions
+            return response_data
         else:
             #print(f"Error: {response.status_code}, Response: {response.text}")
             response.close()
-            return False, False, -1, -1
+            return False
     except requests.RequestException as e:
         print(f"Request failed: {e}")
-        return False, False, -1, -1
+        return False
 
 if __name__ == "__main__":
-    car_position = [60, 0, 0]  # [x, y, z]
-    car_speed = 30  # Speed in some units
+    car_position = [-101.27637854555087,0,-37.000454449950055]  # [x, y, z]
+    car_speed = 26.17942830992363  # Speed in some units
     car_angle = -90  # Angle in degrees
-    gate_position = [[-20, -10], [-20, 10], 5]  # [gate_p1, gate_p2, gate_thickness]
+    gate_position = [[-155,-33], [-143,-24], 5]  # [gate_p1, gate_p2, gate_thickness]
+    file_name = "record_0"
+
     list_controls = [
-        [0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 0], [1, 0, 0, 0], [1, 0, 0, 1], [1, 0, 0, 1], [1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],[1, 0, 0, 0],
-]
+        [
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            1,
+            0,
+            1
+        ],
+        [
+            1,
+            0,
+            1,
+            0
+        ],
+        [
+            0,
+            0,
+            1,
+            0
+        ],
+        [
+            1,
+            0,
+            1,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            1,
+            0,
+            0,
+            1
+        ],
+        [
+            1,
+            0,
+            0,
+            1
+        ],
+        [
+            1,
+            0,
+            0,
+            1
+        ],
+        [
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            1,
+            0,
+            1,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            0
+        ]
+    ]
 
     deltaT = 0.10
-    reussied, status, steps, col = send_simulation_request(
+    succeeded = send_simulation_request(
         "http", 
         "127.0.0.1", 
         5000, 
@@ -165,9 +275,8 @@ if __name__ == "__main__":
         car_speed, 
         car_angle, 
         list_controls, 
-        deltaT
+        deltaT,
+        file_name
     )
-    print("Succeeded?:", reussied)
-    print("Simulation Status:", status)
-    print("Number of deltaT steps to arrive at gate:", steps)
-    print("Number of collisions:", col)
+    
+    print(succeeded)

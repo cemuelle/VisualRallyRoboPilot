@@ -4,9 +4,9 @@ import socket
 import numpy as np
 from gate import Gate
 import time
-
 from flask import Flask, request, jsonify
-
+import pickle
+import lzma
 
 from .sensing_message import SensingSnapshot, SensingSnapshotManager
 from .remote_commands import RemoteCommandParser
@@ -41,6 +41,7 @@ class RemoteController(Entity):
         self.step = 0
         self.gate = Gate()
 
+        self.writing = False
         self.snapshot_buffer = []
 
         # Setup http route for updating.
@@ -57,6 +58,7 @@ class RemoteController(Entity):
                 self.client_commands.add(command_data['command'].encode())
                 return jsonify({"status": f"Command received: {command_data['command']}"}), 200
             except Exception as e:
+                print(e)
                 return jsonify({"error": str(e)}), 500
             
 
@@ -82,29 +84,35 @@ class RemoteController(Entity):
                 "car_position": list,
                 "car_speed": (int, float),
                 "car_angle": (int, float),
-                "list_controls": list
+                "list_controls": list,
+                "file_name": str
             }
 
             # Check if all required fields are present and have the correct type
             for field, expected_type in required_fields.items():
                 if field not in command_data:
                     is_ready = True
+                    print(f"Missing required field: {field}")
                     return jsonify({"error": f"Missing required field: {field}"}), 400
                 if not isinstance(command_data[field], expected_type):
                     is_ready = True
+                    print(f"Invalid type for field: {field}. Expected {expected_type}")
                     return jsonify({"error": f"Invalid type for field: {field}. Expected {expected_type}"}), 400
                 
             # Additional checks for specific fields
             if len(command_data['gate_p1']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p1']):
                 is_ready = True
+                print("Invalid format for gate_p1. Expected a list of two numbers.")
                 return jsonify({"error": "Invalid format for gate_p1. Expected a list of two numbers."}), 400
 
             if len(command_data['gate_p2']) != 2 or not all(isinstance(x, (int, float)) for x in command_data['gate_p2']):
                 is_ready = True
+                print("Invalid format for gate_p2. Expected a list of two numbers.")
                 return jsonify({"error": "Invalid format for gate_p2. Expected a list of two numbers."}), 400
 
             if len(command_data['car_position']) != 3 or not all(isinstance(x, (int, float)) for x in command_data['car_position']):
                 is_ready = True
+                print("Invalid format for car_position. Expected a list of three numbers.")
                 return jsonify({"error": "Invalid format for car_position. Expected a list of three numbers."}), 400
 
             if not isinstance(command_data['list_controls'], list) or len(command_data['list_controls']) == 0 or not all(
@@ -112,6 +120,7 @@ class RemoteController(Entity):
                     for control in command_data['list_controls']
             ):
                 is_ready = True
+                print("Invalid format for list_controls. Expected a non-empty list of lists, each containing four numbers.")
                 return jsonify({"error": "Invalid format for list_controls. Expected a non-empty list of lists, each containing four numbers."}), 400
         
 
@@ -127,23 +136,33 @@ class RemoteController(Entity):
                 self.car.reset_orientation = (0, command_data['car_angle'], 0)
                 self.car.reset_car()
                 self.snapshot_buffer = []
-
+                
                 self.list_controls = command_data['list_controls']
                 
                 while self.start_simulate_controls:
                     time.sleep(0.1)
 
                 if self.pass_gate:
-                    is_ready = True
+                    print("nombre de données:", len(self.snapshot_buffer))
+                    self.writing = True
+                    path = f"./images_outputs/{command_data['file_name']}.npz"
+                    data = self.snapshot_buffer
 
-                    for i in len(self.snapshot_buffer):
-                        print(self.snapshot_buffer[i])
-                    return jsonify(), 200
+                    with lzma.open(path, "wb") as f:
+                        pickle.dump(data, f)
+
+                    self.writing = False
+                    self.snapshot_buffer = []
+                    is_ready = True
+                    return jsonify(True), 200
+                        
                 else:
                     is_ready = True
+                    print(e)
                     return jsonify({"error": "individual did not pass the gate"}), 500
             except Exception as e:
                 is_ready = True
+                print("yay", e)
                 return jsonify({"error": str(e)}), 500
     
         @flask_app.route('/sensing')
@@ -212,6 +231,8 @@ class RemoteController(Entity):
         image = image[::-1, :, :]#   Image arrives with inverted Y axis
 
         snapshot.image = image
+        if not self.writing:
+            self.snapshot_buffer.append(snapshot)
 
         
 
