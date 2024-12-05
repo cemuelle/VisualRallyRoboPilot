@@ -2,6 +2,9 @@ import os
 import json
 from ga_pipeline import genAl
 
+GENERATIONS = 20
+PITY = 20
+
 def process_blocks(base_directory):
     for context_dir in sorted(os.listdir(base_directory)):
         context_path = os.path.join(base_directory, context_dir)
@@ -17,7 +20,7 @@ def process_blocks(base_directory):
                     population = []
                     context = {}
                     for file in sorted(os.listdir(iteration_path)):
-                        if file.endswith('.json'):
+                        if file.endswith('.json') and file.startswith('individual'):
                             file_path = os.path.join(iteration_path, file)
                             try:
                                 
@@ -29,16 +32,19 @@ def process_blocks(base_directory):
                                         tupledControls = []
                                         for i in data["controls"]:
                                             tupledControls.append(tuple(i))
-
+                                        for i in range(PITY):
+                                            tupledControls.append(tupledControls[-1])
                                         population.append((iteration_path, tupledControls))
 
                                     elif context == data["initial_context"]:
                                         tupledControls = []
                                         for i in data["controls"]:
                                             tupledControls.append(tuple(i))
+                                        for i in range(PITY):
+                                            tupledControls.append(tupledControls[-1])
                                         population.append((iteration_path, tupledControls))
                                     else:
-                                        raise Exception(f"The context doesn't match the previous context {context} ({file_path})") 
+                                        raise Exception(f"The context doesn't match the previous context {context} ({file_path})")
 
                             except json.JSONDecodeError as e:
                                 print(f"    Error decoding JSON in file {file_path}: {e}")
@@ -48,16 +54,23 @@ def process_blocks(base_directory):
                     print("finito le ", iteration_dir)
                     print(context)
                     print(population)
-                    gaOut = genAl(2,population,context)
-                    for elit in gaOut:
-                        individual_file_path = os.path.join(iteration_path, f"ga_augmented_{iteration_dir}.json")
+                    gaOut, scores, bests = genAl(GENERATIONS,population,context)
+                    print(scores)
+                    individual_result_path = os.path.join(iteration_path, f"improvement_{iteration_dir}.txt")
+                    generational_best_path = os.path.join(iteration_path, f"bests_{iteration_dir}.txt")
+                    for elit in range(len(gaOut)):
+                        individual_file_path = os.path.join(iteration_path, f"ga_augmented_{iteration_dir}{elit}.json")
                         with open(individual_file_path, "w") as f:
                             json.dump({
                                 "initial_context": context,
-                                "controls": elit
+                                "controls": gaOut[elit]
                             }, f, indent=4)   
+                    with open(individual_result_path, "w") as f:
+                        f.write(str(scores))
+                    with open(generational_best_path, "w") as f:
+                        f.write(str(bests))
 
         
 
-base_directory = "out"  # Directory with the controls
+base_directory = "out_red"  # Directory with the controls
 process_blocks(base_directory)

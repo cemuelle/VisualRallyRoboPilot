@@ -142,13 +142,15 @@ def add_fitness(individual_controls, list_ips):
     while(True):
         newPop = run_simulation_in_parallel(pop,individual_controls)
         cnt = 0
+        tries = 5
         #print(newPop)
         for i in newPop:
             name, controls, score = i
             if score != 1000:
                 cnt += 1
-            if cnt >= 2:
+            if cnt >= 2 or tries <= 0:
                 return newPop
+            tries -= 1
         print("generation with no one passing the finish line, there must have been a problem. let's do it again.")
 
 
@@ -273,7 +275,7 @@ def mutate(individual, mutation_rate):
     - individual: The mutated individual with updated controls
     """
 
-    name, controls = individual  # Get the controls from the individual
+    name, controls, _ = individual  # Get the controls from the individual
 
     newControls = []
 
@@ -311,8 +313,7 @@ def smoothingTemplate(individual, mutation_rate, directions):
     current smoothing patterns:
     a, a, b => a, a, a   |   a, b, a => a, a, a   |   a, b, a => a, a, b   |   b, a, a => a, a, a
     """
-
-    name, controlsRaw = individual
+    name, controlsRaw, _ = individual
     controls = list(map(list, zip(*controlsRaw)))  # transpose the controls to facilitate working with a window
 
     for j in range(4):
@@ -448,6 +449,7 @@ def graph_speed_over_generations(generation_data):
 
 def genetic_algorithm(generation, mutation_rate, population_size, elitism_count, individual_controls):
     generation_data = []  # Store generation number and average speed
+    generation_best = []
     game_ips = get_pods()
     # Start the evolution process for the specified number of generations
     for gen in range(generation):
@@ -455,18 +457,21 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         individual_with_scores = add_fitness(individual_controls,game_ips)
         print(f"Fitness done {gen + 1}")
         # Step 0: store the best of the generation
-        speeds = [individual[2] for individual in individual_with_scores]
+        speeds_raw = [individual[2] for individual in individual_with_scores]
+        speeds = []
+        for i in speeds_raw:
+            if i != 1000:
+                speeds.append(i)
+        print(speeds)
         avg_speed = sum(speeds) / len(speeds) if speeds else 0
         generation_data.append((gen + 1, avg_speed))
         # Step 1: Select Elite individuals
         elite = elitism(individual_with_scores, elitism_count)
+        generation_best.append(elite[0][2])
         print(f"Elitism done {gen + 1}")
-        # Step 2: Create the next generation using crossover
-        #crossed_pop = add_crossover_pop(individual_with_scores, population_size, elitism_count)
-        #print(f"crossover done {gen + 1}")
+        # Step 2: Create the next generation using crossover)
         elite_pop = populate(elite, population_size, elitism_count)
         # Step 3: Mutate the crossed population
-        
         mutated_pop = mutate_population(elite_pop, mutation_rate)
         print("size of mutated pop", len(mutated_pop))
         print(f"mutated_pop {gen + 1}")
@@ -476,14 +481,6 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
         individual_controls = next_generation # apply the new generation
         print(f"create final generation {gen + 1}")
         # Step 5: Print the current population after mutation
-        '''print("Mutated Population:")
-        for individual in next_generation:
-            name, controls = individual
-            print(f"Individual: {name}, Controls: {controls}")
-            print("\n")
-        '''
-        #print("\n")
-        #print(individual_controls)
         print("final gen size ", len(next_generation))
         print(f"ready for gen {gen + 2}")
 
@@ -491,9 +488,10 @@ def genetic_algorithm(generation, mutation_rate, population_size, elitism_count,
     strappedElites = []
     for i in elite:
         strappedElites.append(i[1])
-    return strappedElites
+    return strappedElites, generation_data, generation_best
 
 
+# function to call the whole ga pipeline from outside the file
 def genAl(generation, initial_controls, section):
     global gate_p1, gate_p2, thickness, car_angle, car_position, car_speed
     gate_p1, gate_p2,thickness,car_position,car_speed,car_angle = section
@@ -505,19 +503,4 @@ def genAl(generation, initial_controls, section):
     car_speed = 50
     car_angle = -90
     '''
-    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=20, elitism_count=2, individual_controls=initial_controls)
-
-
-#individual_con = load_data("data_trajectory_test/*.npz")
-individual_controls = [('individual_0_0', [(0, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0)]), 
-('individual_0_1', [(1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1)]), 
-('individual_0_2', [(1, 0, 0, 1), (0, 0, 1, 0), (0, 1, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0)]), 
-('individual_0_3', [(1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1)]), 
-('individual_0_4', [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1)]), 
-('individual_0_5', [(1, 0, 0, 1), (0, 1, 1, 0), (0, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0)]), 
-('individual_0_6', [(1, 0, 1, 0), (0, 0, 0, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0)]), ('individual_0_7', [(1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0)]), 
-('individual_0_8', [(1, 0, 0, 1), (0, 0, 1, 0), (0, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0)]), 
-('individual_0_9', [(1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 0), (1, 0, 1, 0), (1, 0, 1, 0), (1, 0, 0, 0), (1, 0, 0, 1)])]
-
-#paramTab =   [[-20,-10], [-20,10], 5, [60,0,0], 30, -90]
-#yay = genAl(10,individual_controls,paramTab)
+    return genetic_algorithm(generation=generation, mutation_rate=0.1, population_size=10, elitism_count=2, individual_controls=initial_controls)

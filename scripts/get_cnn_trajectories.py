@@ -6,13 +6,14 @@ import json
 import random
 import os
 
-INDIVI_NUMBER = 10
-RANDOMIZATION_RANGE = 8
-MAX_DURATION = 5
-N_ITERATIONS = 3
-GATE_WIDTH = 5
-PORT = 7654
-OUTPUT_DIR = "testout"
+# parameters
+INDIVI_NUMBER = 10 # number of individuals to generate for each population
+RANDOMIZATION_RANGE = 8 # size of the random box of the car initial position
+N_ITERATIONS = 3 # number of iterations per context
+GATE_WIDTH = 5 # width of the gate (finish line)
+PORT = 7654 # port to use for the connexion to the main
+OUTPUT_DIR = "testout" # output directory
+
 
 class CarController:
     def __init__(self, protocol, server_ip, port):
@@ -41,10 +42,10 @@ class CarController:
         try:
             response = requests.post(url, headers=headers, json=data)
             if response.status_code == 200:
-                # print("Success:", response.json())
+                print("Success:", response.json())
                 pass
-            #else:
-                #print(f"Error: {response.status_code}, Response: {response.text}")
+            else:
+                print(f"Error: {response.status_code}, Response: {response.text}")
         except requests.RequestException as e:
             print(f"Request failed: {e}")
 
@@ -55,7 +56,7 @@ class CarController:
             if response.status_code == 200:
                 return response.json()
             else:
-                #print(f"Error: {response.status_code}, Response: {response.text}")
+                print(f"Error: {response.status_code}, Response: {response.text}")
                 return None
         except requests.RequestException as e:
             print(f"Request failed: {e}")
@@ -68,33 +69,6 @@ class CarController:
             else:
                 self.send_command(f"release {self.commands[i]};")
 
-def simulate_car_movement(car_position, gate_position, list_controls, car_controller):
-    gate = Gate()
-    gate.set_gate(gate_position[0], gate_position[1], gate_position[2])
-
-    car_controller.set_car(car_position[0], car_position[1], car_position[2], car_position[3], car_position[4])
-
-    start_time = time.time()
-    crossed_gate = False
-
-    for controls in list_controls:
-        car_controller.control_car(controls)
-        sensing_data = car_controller.get_sensing()
-        if sensing_data:
-            x = sensing_data["car_position x"]
-            z = sensing_data["car_position z"]
-            position = (x, z)
-            if gate.is_car_through(position):
-                end_time = time.time()
-                crossed_gate = True
-                break
-        time.sleep(0.5)
-
-    if not crossed_gate:
-        return math.inf
-    else:
-        elapsed_time = end_time - start_time
-        return elapsed_time
     
 
 
@@ -201,7 +175,7 @@ for idx, gate_config in enumerate(gate_configurations):
 
             # Verify that initial_position is not modified
             position_to_use = initial_position[:]  # Always work with a copy
-            # Simulate data retrieval (replace with actual function)
+            # Simulate data retrieval 
             deltaT = 10
             success = False
             while not success:

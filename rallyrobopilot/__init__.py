@@ -1,6 +1,6 @@
 from .car import Car
 from .particles import Particles
-from .cnn_controller import RemoteController
+from .remote_controller import RemoteController
 from .track import Track
 from .sun import SunLight
 from .raycast_sensor import MultiRaySensor
