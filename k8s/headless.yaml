@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headempty-zeb
+spec:
+  selector:
+    matchLabels:
+      app: rallyTrainer
+      tier: headempty-zeb
+      track: stable
+  replicas: $K8S_NUMBER_PODS
+  template:
+    metadata:
+      labels:
+        app: rallyTrainer
+        tier: headempty-zeb
+        track: stable
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - calypso4
+                  - calypso5
+      containers:
+        - name: headless
+          image: sebdufond/headless-rally:latest
+          imagePullPolicy: Always
+          tty: true               # Allocate a TTY
+          stdin: true             # Keep STDIN open (optional)
