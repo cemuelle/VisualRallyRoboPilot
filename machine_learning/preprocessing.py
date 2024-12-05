@@ -4,8 +4,8 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 resize = transforms.Compose([
-    transforms.Resize(224),
-    transforms.CenterCrop(224),
+    transforms.Resize(512),
+    transforms.CenterCrop(512),
     transforms.ToTensor(),
 ])
 

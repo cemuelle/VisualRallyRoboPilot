@@ -49,8 +49,10 @@ class CustomDataset(Dataset):
                             for x in data:
                                 color_mask = ColorThresholdTransform(colToRgb(subfolder_name), margin=0.01)
                                 image = Image.fromarray(x.image)
+                                # plot_image(image)
                                 if self.transform_image:
                                     image_transf = self.transform_image(image)
+                                    # plot_image(image_transf.permute(1, 2, 0))
                                 else:
                                     image_transf = image
                                 
