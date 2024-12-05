@@ -156,7 +156,7 @@ if __name__ == "__main__":
     validation_dataloader = DataLoader(validation_dataset, batch_size=8, shuffle=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=5)
 
     pos_weight = dataset.get_distribution().sum() / dataset.get_distribution()
     pos_weight[1] = pos_weight[1] * 0.3

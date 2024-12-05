@@ -36,7 +36,7 @@ class ColorThresholdTransform:
         Args:
             target_color (tuple): RGB color to threshold
         """
-        if target_color is None or (isinstance(target_color, (list, tuple)) and target_color == -1):
+        if target_color is None or target_color == -1:
             self.target_color = None
         else:
             self.target_color = torch.tensor(target_color, dtype=torch.float32).view(3, 1, 1)
@@ -72,9 +72,9 @@ if __name__ == "__main__":
         if data[0].image is not None:
             # plt.imshow(data[0].image)
             # plt.show()
-            target_color = torch.tensor([255.0, 0.0, 0.0])
-            transform = ColorThresholdTransform(-1, margin=0.01)
-            # transform = ColorThresholdTransform(target_color, margin=0.01)
+            target_color = [0,0,255]
+            # transform = ColorThresholdTransform(-1, margin=0.01)
+            transform = ColorThresholdTransform(target_color, margin=0.01)
             image = Image.fromarray(data[0].image)
             mask = transform(image)
             plt.imshow(mask)
