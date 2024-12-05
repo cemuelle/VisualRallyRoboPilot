@@ -125,7 +125,7 @@ def add_fitness(individual_controls, list_ips, n_elits):
 # mainly a debug function to check if modifications occur each generation, simpler with this than with huge (0-1,0-1,0-1,0-1) lists
 def nControls(ind):
     a,w,s,d = 0,0,0,0
-    controls = ind[0][1]
+    controls = ind[1]
 
     for i in controls:
         na,nw,ns,nd = i
